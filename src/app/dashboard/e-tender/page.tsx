@@ -1837,10 +1837,30 @@ export default function ETenderListPage() {
                                 <TableCell className="text-xs leading-tight">{t.nameOfWork || "N/A"}</TableCell>
                                 <TableCell className="text-xs">{formatDateSafe(t.dateWorkOrder)}</TableCell>
                                 <TableCell className="text-xs text-right font-mono font-medium">
-                                  {pg !== null && pg !== undefined ? `₹${pg.toLocaleString('en-IN')}` : 'Nil'}
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span>{pg !== null && pg !== undefined ? `₹${pg.toLocaleString('en-IN')}` : 'Nil'}</span>
+                                    {pg !== null && pg !== undefined && (
+                                      <Badge variant="outline" className={cn(
+                                        "text-[9px] px-1 h-3.5",
+                                        t.performanceGuaranteeReleaseStatus === 'Released' ? "border-green-500 text-green-700 bg-green-50" : "border-amber-500 text-amber-700 bg-amber-50"
+                                      )}>
+                                        {t.performanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-xs text-right font-mono font-medium">
-                                  {apg !== null && apg !== undefined ? `₹${apg.toLocaleString('en-IN')}` : 'Nil'}
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span>{apg !== null && apg !== undefined ? `₹${apg.toLocaleString('en-IN')}` : 'Nil'}</span>
+                                    {apg !== null && apg !== undefined && (
+                                      <Badge variant="outline" className={cn(
+                                        "text-[9px] px-1 h-3.5",
+                                        t.additionalPerformanceGuaranteeReleaseStatus === 'Released' ? "border-green-500 text-green-700 bg-green-50" : "border-amber-500 text-amber-700 bg-amber-50"
+                                      )}>
+                                        {t.additionalPerformanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
