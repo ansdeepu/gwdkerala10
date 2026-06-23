@@ -292,7 +292,7 @@ export default function FinancialSummaryPage() {
                                       </TableCell>
                                   </TableRow>
                                   <TableRow>
-                                      <TableCell className="font-medium">Collector's Deposit Works</TableCell>
+                                      <TableCell className="font-medium">Collector&apos;s Deposit Works</TableCell>
                                        <TableCell className="text-right font-mono font-bold">
                                             <Button variant="link" className="p-0 h-auto font-mono text-right w-full block font-bold" disabled={!transformedFinanceMetrics.collectorFundDeferredAmount}>
                                                 {transformedFinanceMetrics.collectorFundDeferredAmount.toLocaleString('en-IN')}
@@ -329,7 +329,7 @@ export default function FinancialSummaryPage() {
             </CardContent>
             <CardFooter>
                 <p className="text-xs text-muted-foreground pt-4">
-                    Note: Operational Accounts data is based on Deposit Works (Public & Private). Administrative Sanction data is based on Collector's & Plan Fund works. Revenue Head includes credits from all work types.
+                    Note: Operational Accounts data is based on Deposit Works (Public & Private). Administrative Sanction data is based on Collector&apos;s & Plan Fund works. Revenue Head includes credits from all work types.
                 </p>
           </CardFooter>
         </Card>

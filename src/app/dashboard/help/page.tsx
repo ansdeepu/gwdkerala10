@@ -87,10 +87,10 @@ export default function HelpPage() {
             <CardContent className="text-sm text-blue-900/80 space-y-3">
                 <p>When an office is first activated, the Office Admin should perform these actions in order:</p>
                 <ol className="list-decimal pl-5 space-y-2">
-                    <li><strong>Configure Office Details:</strong> Go to the Settings page and fill in the office address (English & Malayalam), bank account details, and the District Officer's name. This information is used for auto-generating PDF reports.</li>
+                    <li><strong>Configure Office Details:</strong> Go to the Settings page and fill in the office address (English & Malayalam), bank account details, and the District Officer&apos;s name. This information is used for auto-generating PDF reports.</li>
                     <li><strong>Register Staff:</strong> Go to the Establishment page and add all employees. Ensure accurate designations and PEN numbers.</li>
-                    <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the "Create User Account" box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
-                    <li><strong>Log Vehicles & Rigs:</strong> On the Vehicles & Rig page, add details of all department vehicles, hired vehicles, and Rig & Compressor Units belonging to your office. Also, use the 'Add External' button to log any rigs engaged from other offices. This ensures all units are available for selection in project forms.</li>
+                    <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the &quot;Create User Account&quot; box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
+                    <li><strong>Log Vehicles & Rigs:</strong> On the Vehicles & Rig page, add details of all department vehicles, hired vehicles, and Rig & Compressor Units belonging to your office. Also, use the &apos;Add External&apos; button to log any rigs engaged from other offices. This ensures all units are available for selection in project forms.</li>
                 </ol>
             </CardContent>
         </Card>
@@ -102,7 +102,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent className="text-sm text-amber-900/80 space-y-3">
                 <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Sub-Office Setup:</strong> Super Admins can create new office locations. This automatically provisions three core accounts: Admin, Scientist, and Engineer with a default password of "123456".</li>
+                    <li><strong>Sub-Office Setup:</strong> Super Admins can create new office locations. This automatically provisions three core accounts: Admin, Scientist, and Engineer with a default password of &quot;123456&quot;.</li>
                     <li><strong>Global Data:</strong> Super Admins manage departmental drilling rates and global user accounts across the entire state.</li>
                     <li><strong>Transfer Approval:</strong> When an Office Admin initiates a staff transfer, it must be approved by the Super Admin to move the record to the target office.</li>
                 </ul>
@@ -170,7 +170,7 @@ export default function HelpPage() {
               <AccordionTrigger>Re-appropriation & Fund Transfers</AccordionTrigger>
               <AccordionContent>
                 <p className="text-sm text-muted-foreground">
-                    This module tracks the movement of funds between files. When funds are moved "Outward" from one file, the system automatically creates a "Credit" entry in the destination file, ensuring a clear audit trail of departmental funds.
+                    This module tracks the movement of funds between files. When funds are moved &quot;Outward&quot; from one file, the system automatically creates a &quot;Credit&quot; entry in the destination file, ensuring a clear audit trail of departmental funds.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -217,8 +217,8 @@ export default function HelpPage() {
                     <p className="font-semibold text-primary flex items-center gap-2"><ImageUp className="h-4 w-4"/> Recommended Workflow (using Postimages):</p>
                     <ol className="list-decimal pl-5 space-y-1">
                         <li>Visit <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-bold">Postimages.org</a>.</li>
-                        <li>Upload your photo (select "Do not resize" for best quality).</li>
-                        <li>Once uploaded, copy the <strong>"Direct Link"</strong> (it must end in <code>.jpg</code> or <code>.png</code>).</li>
+                        <li>Upload your photo (select &quot;Do not resize&quot; for best quality).</li>
+                        <li>Once uploaded, copy the <strong>&quot;Direct Link&quot;</strong> (it must end in <code>.jpg</code> or <code>.png</code>).</li>
                         <li>Paste this link into the Photo URL field in the dashboard. A preview will appear if the link is valid.</li>
                     </ol>
                 </div>
@@ -230,22 +230,22 @@ export default function HelpPage() {
               <AccordionContent className="text-sm text-muted-foreground">
                 <ul className="list-disc pl-5 space-y-2">
                     <li><strong>Sub-Office Accounts:</strong> Initial Admin, Scientist, and Engineer accounts are created by the Super Admin.</li>
-                    <li><strong>Staff Logins:</strong> Office Admins create accounts for other staff (like Supervisors) by registering them in the <strong>Establishment</strong> module and checking the "Create User Account" option.</li>
+                    <li><strong>Staff Logins:</strong> Office Admins create accounts for other staff (like Supervisors) by registering them in the <strong>Establishment</strong> module and checking the &quot;Create User Account&quot; option.</li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="faq-icon">
-              <AccordionTrigger>What does the 'Eye' icon do?</AccordionTrigger>
+              <AccordionTrigger>What does the &apos;Eye&apos; icon do?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
-                The 'Eye' icon opens a detailed view of the record. In list views, it allows you to see the full information of a file or staff member. In forms, it allows you to edit the specific details of a site or remittance entry.
+                The &apos;Eye&apos; icon opens a detailed view of the record. In list views, it allows you to see the full information of a file or staff member. In forms, it allows you to edit the specific details of a site or remittance entry.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="faq-4">
               <AccordionTrigger>How does the LSG and Constituency mapping work?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
-                Admins can import an Excel mapping file in <strong>Settings</strong>. Once mapped, selecting an LSG in any project form will automatically filter the "Constituency" dropdown to show only the LACs associated with that LSG.
+                Admins can import an Excel mapping file in <strong>Settings</strong>. Once mapped, selecting an LSG in any project form will automatically filter the &quot;Constituency&quot; dropdown to show only the LACs associated with that LSG.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

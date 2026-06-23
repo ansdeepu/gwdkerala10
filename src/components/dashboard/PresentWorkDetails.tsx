@@ -184,7 +184,7 @@ export default function PresentWorkDetails({ allFileEntries, allArsEntries, onOp
                             <TableBody>
                                 {activeList.length > 0 ? (
                                     activeList.map((work, index) => (
-                                        <TableRow key={`${work.fileNo}-${work.nameOfWork}`} className="hover:bg-secondary/30 transition-colors">
+                                        <TableRow key={`${work.type}-${work.id}-${work.siteId || index}`} className="hover:bg-secondary/30 transition-colors">
                                             <TableCell className="text-center font-mono text-xs text-muted-foreground">{index + 1}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-0.5">

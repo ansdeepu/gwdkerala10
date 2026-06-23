@@ -334,7 +334,7 @@ export default function VehiclesPage() {
         URL.revokeObjectURL(url);
 
         toast({ title: "Excel Exported", description: `${sheetName} data has been downloaded.` });
-    }, [allDepartmentVehicles, allHiredVehicles, allRigCompressors, toast]);
+    }, [allDepartmentVehicles, allHiredVehicles, allRigCompressors]);
     
     const { presentDepartmentVehicles, historyDepartmentVehicles } = useMemo(() => ({
         presentDepartmentVehicles: allDepartmentVehicles.filter(v => v.rcStatus !== 'Garaged'),

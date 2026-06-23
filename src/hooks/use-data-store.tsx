@@ -324,43 +324,101 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
-    const useAddVehicle = <T extends {}>(collectionName: string) => {
-      return useCallback(async (data: T) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("Office location required.");
-          const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
-          const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-          if ('id' in payload) delete (payload as any).id;
-          await addDoc(collection(db, collectionPath), payload);
-      }, [user, selectedOffice]);
-    };
-  
-    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
-      return useCallback(async (data: T) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc || !data.id) throw new Error("Missing office or ID.");
-          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
-          const payload = { ...data, updatedAt: serverTimestamp() };
-          if ('id' in payload) delete (payload as any).id;
-          await updateDoc(docRef, payload);
-      }, [user, selectedOffice]);
-    };
-  
-    const useDeleteVehicle = (collectionName: string) => {
-      return useCallback(async (id: string, name: string) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("Office location required.");
-          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
-          deleteDoc(docRef).then(() => toast({ title: 'Item Deleted', description: `${name} removed.` }))
-              .catch(error => {
-                  if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
-                  else toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-              });
-      }, [user, selectedOffice]);
-    };
+    const addDepartmentVehicle = useCallback(async (data: DepartmentVehicle) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`;
+        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await addDoc(collection(db, collectionPath), payload);
+    }, [user, selectedOffice]);
+
+    const updateDepartmentVehicle = useCallback(async (data: DepartmentVehicle) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc || !data.id) throw new Error("Missing office or ID.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`, data.id);
+        const payload = { ...data, updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await updateDoc(docRef, payload);
+    }, [user, selectedOffice]);
+
+    const deleteDepartmentVehicle = useCallback(async (id: string, name: string) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`, id);
+        deleteDoc(docRef).then(() => toast({ title: 'Item Deleted', description: `${name} removed.` }))
+            .catch(error => {
+                if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+                else toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+            });
+    }, [user, selectedOffice]);
+    
+    const addHiredVehicle = useCallback(async (data: HiredVehicle) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`;
+        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await addDoc(collection(db, collectionPath), payload);
+    }, [user, selectedOffice]);
+
+    const updateHiredVehicle = useCallback(async (data: HiredVehicle) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc || !data.id) throw new Error("Missing office or ID.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`, data.id);
+        const payload = { ...data, updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await updateDoc(docRef, payload);
+    }, [user, selectedOffice]);
+
+    const deleteHiredVehicle = useCallback(async (id: string, name: string) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`, id);
+        deleteDoc(docRef).then(() => toast({ title: 'Item Deleted', description: `${name} removed.` }))
+            .catch(error => {
+                if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+                else toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+            });
+    }, [user, selectedOffice]);
+
+    const addRigCompressor = useCallback(async (data: RigCompressor) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`;
+        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await addDoc(collection(db, collectionPath), payload);
+    }, [user, selectedOffice]);
+
+    const updateRigCompressor = useCallback(async (data: RigCompressor) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc || !data.id) throw new Error("Missing office or ID.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`, data.id);
+        const payload = { ...data, updatedAt: serverTimestamp() };
+        if ('id' in payload) delete (payload as any).id;
+        await updateDoc(docRef, payload);
+    }, [user, selectedOffice]);
+
+    const deleteRigCompressor = useCallback(async (id: string, name: string) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("Office location required.");
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`, id);
+        deleteDoc(docRef).then(() => toast({ title: 'Item Deleted', description: `${name} removed.` }))
+            .catch(error => {
+                if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+                else toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+            });
+    }, [user, selectedOffice]);
 
     return (
         <DataStoreContext.Provider value={{
@@ -368,10 +426,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allSanctionedStrength, updateSanctionedStrength, allOfficeAddresses: globalOfficeAddresses, officeAddress, isLoading,
             searchTerms, setModuleSearchTerm, clearAllSearchTerms,
-            refetchRateDescriptions, deleteArsEntry, addDepartmentVehicle: useAddVehicle(COLLECTIONS.DEPARTMENT), updateDepartmentVehicle: useUpdateVehicle(COLLECTIONS.DEPARTMENT),
-            deleteDepartmentVehicle: useDeleteVehicle(COLLECTIONS.DEPARTMENT), addHiredVehicle: useAddVehicle(COLLECTIONS.HIRED), updateHiredVehicle: useUpdateVehicle(COLLECTIONS.HIRED),
-            deleteHiredVehicle: useDeleteVehicle(COLLECTIONS.HIRED), addRigCompressor: useAddVehicle(COLLECTIONS.RIG_COMPRESSOR), updateRigCompressor: useUpdateVehicle(COLLECTIONS.RIG_COMPRESSOR),
-            deleteRigCompressor: useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR),
+            refetchRateDescriptions, deleteArsEntry, 
+            addDepartmentVehicle, updateDepartmentVehicle, deleteDepartmentVehicle, 
+            addHiredVehicle, updateHiredVehicle, deleteHiredVehicle, 
+            addRigCompressor, updateRigCompressor, deleteRigCompressor,
         }}>{children}</DataStoreContext.Provider>
     );
 }

@@ -69,7 +69,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const watchedLsg = watch("localSelfGovt");
     const watchedWorkStatus = watch('workStatus');
 
-    const isFieldReadOnly = (fieldName: string): boolean => {
+    const isFieldReadOnly = useCallback((fieldName: string): boolean => {
         if (isReadOnly) return true;
 
         if (isSupervisor) {
@@ -83,7 +83,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         }
         
         return false; // Not read-only for admin/scientist
-    };
+    }, [isReadOnly, isSupervisor, isInvestigator]);
     
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {

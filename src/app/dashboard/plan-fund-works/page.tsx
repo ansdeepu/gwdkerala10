@@ -144,7 +144,7 @@ export default function PlanFundWorksPage() {
     });
 
     return { planFundEntries: entries };
-  }, [fileEntries, user, codeFilter, allFileEntries]);
+  }, [fileEntries, codeFilter, allFileEntries]);
   
   const searchFilteredEntries = useMemo(() => {
     if (!searchTerm) return planFundEntries;

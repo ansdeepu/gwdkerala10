@@ -654,7 +654,7 @@ export default function GwdRatesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the item "{itemToDelete?.itemName}". This cannot be undone.
+              This action will permanently delete the item &quot;{itemToDelete?.itemName}&quot;. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -671,7 +671,7 @@ export default function GwdRatesPage() {
               <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md">
                   <DialogHeader className="p-6 pb-2">
                       <DialogTitle>Move Item</DialogTitle>
-                      <DialogDescription>Move "{itemToReorder?.itemName}" to a new position in its category.</DialogDescription>
+                      <DialogDescription>Move &quot;{itemToReorder?.itemName}&quot; to a new position in its category.</DialogDescription>
                   </DialogHeader>
                   <form onSubmit={(e) => {
                       e.preventDefault();

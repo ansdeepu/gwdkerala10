@@ -118,7 +118,7 @@ export default function FileDatabaseTable({
   const canCopy = !isReadOnly && user?.role === 'admin';
 
   // Helper to find the latest available date (Remittance or Inward Re-appropriation Credit)
-  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+  const getDisplayDate = useCallback((entry: DataEntryFormData): Date | null => {
     let latestDate: Date | null = null;
 
     // 1. Check all remittance dates
@@ -140,9 +140,8 @@ export default function FileDatabaseTable({
         });
       });
     }
-
     return latestDate;
-  };
+  }, [allFileEntries]);
 
   const requestSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -178,7 +177,7 @@ export default function FileDatabaseTable({
       });
     }
     return sortableItems;
-  }, [fileEntries, sortConfig, allFileEntries]);
+  }, [fileEntries, sortConfig, getDisplayDate]);
 
   useEffect(() => {
     if (!isLoading && lastId) {

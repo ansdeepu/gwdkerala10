@@ -178,7 +178,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         return sitePurposeOptions.slice(0, arsIndex + 1);
     }, [isPrivateWork]);
 
-    const isFieldReadOnly = (isSupervisorEditable: boolean) => {
+    const isFieldReadOnly = useCallback((isSupervisorEditable: boolean) => {
         if (isReadOnly) {
             if (isSupervisor && isSupervisorEditable) {
                 return false; // Supervisors can edit this specific field
@@ -189,7 +189,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             return !isSupervisorEditable;
         }
         return false;
-    };
+    }, [isReadOnly, isSupervisor]);
 
     const sortedLsgMaps = useMemo(() => {
         return [...(allLsgConstituencyMaps || [])].sort((a, b) => a.name.localeCompare(b.name));

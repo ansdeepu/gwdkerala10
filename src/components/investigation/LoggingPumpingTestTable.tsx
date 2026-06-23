@@ -77,7 +77,7 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
   const canDelete = user?.role === 'admin';
   const canCopy = user?.role === 'admin';
 
-  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+  const getDisplayDate = useCallback((entry: DataEntryFormData): Date | null => {
     let latestDate: Date | null = null;
     entry.remittanceDetails?.forEach(rd => {
       const d = safeParseDate(rd.dateOfRemittance);
@@ -96,7 +96,7 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
       });
     }
     return latestDate;
-  };
+  }, [allFileEntries]);
 
   const requestSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -130,7 +130,7 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
       });
     }
     return sortableItems;
-  }, [fileEntries, sortConfig, allFileEntries]);
+  }, [fileEntries, sortConfig, getDisplayDate]);
 
   useEffect(() => {
     if (!isLoading && lastId) {

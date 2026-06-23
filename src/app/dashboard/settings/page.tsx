@@ -535,7 +535,7 @@ export default function SettingsPage() {
                             {isSuperAdmin && !selectedOffice ? (
                                 <p>Select a specific office to view or edit its details.</p>
                             ) : (
-                                <><p>No office details have been configured for {capitalize(user?.officeLocation || 'your location')} yet.</p>{canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}</>
+                                <><p>No office details have been configured for {capitalize(user?.officeLocation || 'your location')} yet.</p>{canManage && <p className="text-sm mt-1">Click &quot;Add Details&quot; to set them up.</p>}</>
                             )}
                         </div>
                     )}
