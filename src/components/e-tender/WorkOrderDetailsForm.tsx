@@ -1,20 +1,26 @@
 // src/components/e-tender/WorkOrderDetailsForm.tsx
 "use client";
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Save, X } from 'lucide-react';
 import { WorkOrderDetailsSchema, type E_tenderFormData, type WorkOrderDetailsFormData, type Designation, designationOptions } from '@/lib/schemas';
 import { formatDateForInput } from './utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+
+const assistantEngineerDesignations: Designation[] = ["Senior Driller", "Master Driller", "Assistant Engineer"];
+const supervisorDesignations: Designation[] = ["Drilling Assistant", "Driller", "Driller Mechanic", "Senior Driller", "Master Driller"];
 
 interface WorkOrderDetailsFormProps {
     initialData?: Partial<E_tenderFormData>;
@@ -24,13 +30,10 @@ interface WorkOrderDetailsFormProps {
     tenderType?: 'Work' | 'Purchase';
 }
 
-const assistantEngineerDesignations: Designation[] = ["Senior Driller", "Master Driller", "Assistant Engineer"];
-const supervisorDesignations: Designation[] = ["Drilling Assistant", "Driller", "Driller Mechanic", "Senior Driller", "Master Driller"];
-
 export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, isSubmitting, tenderType }: WorkOrderDetailsFormProps) {
     const { allStaffMembers } = useDataStore();
 
-    const getSortedStaffList = (designations: Designation[]) => {
+    const getSortedStaffList = useCallback((designations: Designation[]) => {
         return allStaffMembers
             .filter(staff => staff.designation && designations.includes(staff.designation as Designation) && staff.status === 'Active')
             .sort((a, b) => {
@@ -39,10 +42,10 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
                 if (orderA !== orderB) return orderA - orderB;
                 return a.name.localeCompare(b.name);
             });
-    };
+    }, [allStaffMembers]);
 
-    const assistantEngineerList = useMemo(() => getSortedStaffList(assistantEngineerDesignations), [allStaffMembers]);
-    const supervisorList = useMemo(() => getSortedStaffList(supervisorDesignations), [allStaffMembers]);
+    const assistantEngineerList = useMemo(() => getSortedStaffList(assistantEngineerDesignations), [getSortedStaffList]);
+    const supervisorList = useMemo(() => getSortedStaffList(supervisorDesignations), [getSortedStaffList]);
     
     const form = useForm<WorkOrderDetailsFormData>({
         resolver: zodResolver(WorkOrderDetailsSchema),
@@ -51,6 +54,14 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
             agreementDate: formatDateForInput(initialData?.agreementDate),
             dateWorkOrder: formatDateForInput(initialData?.dateWorkOrder),
             securityDepositRemarks: initialData?.securityDepositRemarks || '',
+            isPerformanceGuaranteeSubmitted: initialData?.isPerformanceGuaranteeSubmitted || false,
+            performanceGuaranteeReleaseStatus: initialData?.performanceGuaranteeReleaseStatus || 'Withheld',
+            performanceGuaranteeReleaseDate: formatDateForInput(initialData?.performanceGuaranteeReleaseDate),
+            performanceGuaranteeReleaseRemarks: initialData?.performanceGuaranteeReleaseRemarks || '',
+            isAdditionalPerformanceGuaranteeSubmitted: initialData?.isAdditionalPerformanceGuaranteeSubmitted || false,
+            additionalPerformanceGuaranteeReleaseStatus: initialData?.additionalPerformanceGuaranteeReleaseStatus || 'Withheld',
+            additionalPerformanceGuaranteeReleaseDate: formatDateForInput(initialData?.additionalPerformanceGuaranteeReleaseDate),
+            additionalPerformanceGuaranteeReleaseRemarks: initialData?.additionalPerformanceGuaranteeReleaseRemarks || '',
         }
     });
     
@@ -62,6 +73,14 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
             agreementDate: formatDateForInput(initialData?.agreementDate),
             dateWorkOrder: formatDateForInput(initialData?.dateWorkOrder),
             securityDepositRemarks: initialData?.securityDepositRemarks || '',
+            isPerformanceGuaranteeSubmitted: initialData?.isPerformanceGuaranteeSubmitted || false,
+            performanceGuaranteeReleaseStatus: initialData?.performanceGuaranteeReleaseStatus || 'Withheld',
+            performanceGuaranteeReleaseDate: formatDateForInput(initialData?.performanceGuaranteeReleaseDate),
+            performanceGuaranteeReleaseRemarks: initialData?.performanceGuaranteeReleaseRemarks || '',
+            isAdditionalPerformanceGuaranteeSubmitted: initialData?.isAdditionalPerformanceGuaranteeSubmitted || false,
+            additionalPerformanceGuaranteeReleaseStatus: initialData?.additionalPerformanceGuaranteeReleaseStatus || 'Withheld',
+            additionalPerformanceGuaranteeReleaseDate: formatDateForInput(initialData?.additionalPerformanceGuaranteeReleaseDate),
+            additionalPerformanceGuaranteeReleaseRemarks: initialData?.additionalPerformanceGuaranteeReleaseRemarks || '',
         });
     }, [initialData, reset]);
 
@@ -91,11 +110,11 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
                         {/* Left Column for Financials and Dates (2/3 width) */}
                         <div className="lg:col-span-2 space-y-6">
                             <Card>
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-base">Security Deposit & Stamp Paper (Submitted)</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <FormField name="stampPaperAmountSubmitted" control={control} render={({ field }) => ( 
                                             <FormItem>
                                                 <FormLabel>Stamp Paper (₹)</FormLabel>
@@ -103,20 +122,62 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
                                                 <FormMessage />
                                             </FormItem> 
                                         )}/>
-                                        <FormField name="performanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
-                                            <FormItem>
-                                                <FormLabel>Performance PG (₹)</FormLabel>
-                                                <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem> 
-                                        )}/>
-                                        <FormField name="additionalPerformanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
-                                            <FormItem>
-                                                <FormLabel>Additional PG (₹)</FormLabel>
-                                                <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem> 
-                                        )}/>
+                                        
+                                        <div className="space-y-4 md:col-span-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-3">
+                                                    <FormField name="performanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
+                                                        <FormItem>
+                                                            <FormLabel>Performance Guarantee (₹)</FormLabel>
+                                                            <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem> 
+                                                    )}/>
+                                                    <FormField name="performanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
+                                                        <FormItem className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/5 h-11 shadow-sm">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">Release Status</span>
+                                                                <span className={`text-xs font-semibold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
+                                                                    {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                                                </span>
+                                                            </div>
+                                                            <FormControl>
+                                                                <Switch 
+                                                                    checked={field.value === 'Released'} 
+                                                                    onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
+                                                                />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}/>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <FormField name="additionalPerformanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
+                                                        <FormItem>
+                                                            <FormLabel>Additional PG (₹)</FormLabel>
+                                                            <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem> 
+                                                    )}/>
+                                                    <FormField name="additionalPerformanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
+                                                        <FormItem className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/5 h-11 shadow-sm">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">Release Status</span>
+                                                                <span className={`text-xs font-semibold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
+                                                                    {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                                                </span>
+                                                            </div>
+                                                            <FormControl>
+                                                                <Switch 
+                                                                    checked={field.value === 'Released'} 
+                                                                    onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
+                                                                />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}/>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <FormField name="securityDepositRemarks" control={control} render={({ field }) => (
                                         <FormItem>

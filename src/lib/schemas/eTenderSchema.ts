@@ -214,7 +214,17 @@ export const WorkOrderDetailsSchema = z.object({
     // Submitted amounts
     stampPaperAmountSubmitted: optionalNumberSchema,
     performanceGuaranteeAmountSubmitted: optionalNumberSchema,
+    isPerformanceGuaranteeSubmitted: z.boolean().default(false),
+    performanceGuaranteeReleaseStatus: z.enum(['Withheld', 'Released']).default('Withheld'),
+    performanceGuaranteeReleaseDate: z.any().optional().nullable(),
+    performanceGuaranteeReleaseRemarks: optionalStringSchema,
+    
     additionalPerformanceGuaranteeAmountSubmitted: optionalNumberSchema,
+    isAdditionalPerformanceGuaranteeSubmitted: z.boolean().default(false),
+    additionalPerformanceGuaranteeReleaseStatus: z.enum(['Withheld', 'Released']).default('Withheld'),
+    additionalPerformanceGuaranteeReleaseDate: z.any().optional().nullable(),
+    additionalPerformanceGuaranteeReleaseRemarks: optionalStringSchema,
+    
     securityDepositRemarks: optionalStringSchema,
 });
 export type WorkOrderDetailsFormData = z.infer<typeof WorkOrderDetailsSchema>;
@@ -292,7 +302,17 @@ export const E_tenderSchema = z.object({
     // Submitted amounts
     stampPaperAmountSubmitted: optionalNumberSchema,
     performanceGuaranteeAmountSubmitted: optionalNumberSchema,
+    isPerformanceGuaranteeSubmitted: z.boolean().default(false),
+    performanceGuaranteeReleaseStatus: z.enum(['Withheld', 'Released']).default('Withheld'),
+    performanceGuaranteeReleaseDate: z.any().optional().nullable(),
+    performanceGuaranteeReleaseRemarks: optionalStringSchema,
+    
     additionalPerformanceGuaranteeAmountSubmitted: optionalNumberSchema,
+    isAdditionalPerformanceGuaranteeSubmitted: z.boolean().default(false),
+    additionalPerformanceGuaranteeReleaseStatus: z.enum(['Withheld', 'Released']).default('Withheld'),
+    additionalPerformanceGuaranteeReleaseDate: z.any().optional().nullable(),
+    additionalPerformanceGuaranteeReleaseRemarks: optionalStringSchema,
+    
     securityDepositRemarks: optionalStringSchema,
 
     presentStatus: z.enum(eTenderStatusOptions).optional().nullable(),

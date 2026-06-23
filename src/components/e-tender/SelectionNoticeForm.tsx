@@ -184,31 +184,34 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
 
                         <Separator />
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                        <div className="space-y-6">
                             <FormField name="performanceGuaranteeAmount" control={form.control} render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel>Performance PG (₹)</FormLabel>
+                                    <FormLabel>Performance Guarantee (PG) (₹)</FormLabel>
                                     <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly className="bg-muted/50 font-bold" /></FormControl>
                                     <FormDescription className="text-[10px] leading-tight">Based on 5% of the contract value (rounded up).</FormDescription>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
-                            <FormField name="additionalPerformanceGuaranteeAmount" control={form.control} render={({ field }) => ( 
-                                <FormItem>
-                                    <FormLabel>Additional PG (₹)</FormLabel>
-                                    <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly className="bg-muted/50 font-bold" /></FormControl>
-                                    <FormDescription className="text-[10px] leading-tight">Required for low bids; based on GWD Rates threshold.</FormDescription>
-                                    <FormMessage />
-                                </FormItem> 
-                            )}/>
-                            <FormField name="stampPaperAmount" control={form.control} render={({ field }) => ( 
-                                <FormItem>
-                                    <FormLabel>Stamp Paper (₹)</FormLabel>
-                                    <FormControl><Input type="number" {...field} value={field.value ?? ""} readOnly className="bg-muted/50 font-bold"/></FormControl>
-                                    <FormDescription className="text-[10px] leading-tight">Calculated at ₹100 per lakh (min ₹200).</FormDescription>
-                                    <FormMessage />
-                                </FormItem> 
-                            )}/>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                                <FormField name="additionalPerformanceGuaranteeAmount" control={form.control} render={({ field }) => ( 
+                                    <FormItem>
+                                        <FormLabel>Additional PG (₹)</FormLabel>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly className="bg-muted/50 font-bold" /></FormControl>
+                                        <FormDescription className="text-[10px] leading-tight">Required for low bids; based on GWD Rates threshold.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem> 
+                                )}/>
+                                <FormField name="stampPaperAmount" control={form.control} render={({ field }) => ( 
+                                    <FormItem>
+                                        <FormLabel>Stamp Paper (₹)</FormLabel>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ""} readOnly className="bg-muted/50 font-bold"/></FormControl>
+                                        <FormDescription className="text-[10px] leading-tight">Calculated at ₹100 per lakh (min ₹200).</FormDescription>
+                                        <FormMessage />
+                                    </FormItem> 
+                                )}/>
+                            </div>
                         </div>
                     </div>
                 </div>
