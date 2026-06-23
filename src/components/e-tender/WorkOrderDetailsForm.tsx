@@ -123,60 +123,58 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
                                             </FormItem> 
                                         )}/>
                                         
-                                        <div className="space-y-4 md:col-span-2">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-3">
-                                                    <FormField name="performanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
-                                                        <FormItem>
-                                                            <FormLabel>Performance Guarantee (₹)</FormLabel>
-                                                            <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
-                                                            <FormMessage />
-                                                        </FormItem> 
-                                                    )}/>
-                                                    <FormField name="performanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
-                                                        <FormItem className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/5 h-11 shadow-sm">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">Release Status</span>
-                                                                <span className={`text-xs font-semibold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
-                                                                    {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
-                                                                </span>
-                                                            </div>
-                                                            <FormControl>
-                                                                <Switch 
-                                                                    checked={field.value === 'Released'} 
-                                                                    onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
-                                                                />
-                                                            </FormControl>
-                                                        </FormItem>
-                                                    )}/>
-                                                </div>
+                                        <div className="space-y-3">
+                                            <FormField name="performanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
+                                                <FormItem>
+                                                    <FormLabel>Performance Guarantee (₹)</FormLabel>
+                                                    <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem> 
+                                            )}/>
+                                            <FormField name="performanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
+                                                <FormItem className="flex items-center justify-between border rounded-md px-3 py-1.5 bg-muted/5 h-10 shadow-sm">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none">Release Status</span>
+                                                        <span className={`text-[11px] font-bold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
+                                                            {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                                        </span>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch 
+                                                            checked={field.value === 'Released'} 
+                                                            onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
+                                                            className="scale-75 origin-right"
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}/>
+                                        </div>
 
-                                                <div className="space-y-3">
-                                                    <FormField name="additionalPerformanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
-                                                        <FormItem>
-                                                            <FormLabel>Additional PG (₹)</FormLabel>
-                                                            <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
-                                                            <FormMessage />
-                                                        </FormItem> 
-                                                    )}/>
-                                                    <FormField name="additionalPerformanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
-                                                        <FormItem className="flex items-center justify-between border rounded-md px-3 py-2 bg-muted/5 h-11 shadow-sm">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">Release Status</span>
-                                                                <span className={`text-xs font-semibold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
-                                                                    {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
-                                                                </span>
-                                                            </div>
-                                                            <FormControl>
-                                                                <Switch 
-                                                                    checked={field.value === 'Released'} 
-                                                                    onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
-                                                                />
-                                                            </FormControl>
-                                                        </FormItem>
-                                                    )}/>
-                                                </div>
-                                            </div>
+                                        <div className="space-y-3">
+                                            <FormField name="additionalPerformanceGuaranteeAmountSubmitted" control={control} render={({ field }) => ( 
+                                                <FormItem>
+                                                    <FormLabel>Additional PG (₹)</FormLabel>
+                                                    <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem> 
+                                            )}/>
+                                            <FormField name="additionalPerformanceGuaranteeReleaseStatus" control={control} render={({ field }) => (
+                                                <FormItem className="flex items-center justify-between border rounded-md px-3 py-1.5 bg-muted/5 h-10 shadow-sm">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none">Release Status</span>
+                                                        <span className={`text-[11px] font-bold ${field.value === 'Released' ? 'text-green-600' : 'text-amber-600'}`}>
+                                                            {field.value === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                                        </span>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch 
+                                                            checked={field.value === 'Released'} 
+                                                            onCheckedChange={(checked) => field.onChange(checked ? 'Released' : 'Withheld')} 
+                                                            className="scale-75 origin-right"
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}/>
                                         </div>
                                     </div>
                                     <FormField name="securityDepositRemarks" control={control} render={({ field }) => (

@@ -705,8 +705,18 @@ export default function TenderDetails() {
                                             <DetailRow label="Date - Work / Supply Order" value={watch('dateWorkOrder')} />
                                             <DetailRow label="Measurer" value={watch('nameOfAssistantEngineer')} subValue={assistantEngineerDesignation} />
                                             <DetailRow label="Stamp Paper Submitted" value={watch('stampPaperAmountSubmitted')} isCurrency />
-                                            <DetailRow label="Performance Guarantee Submitted" value={watch('performanceGuaranteeAmountSubmitted')} isCurrency />
-                                            <DetailRow label="Additional PG Submitted" value={watch('additionalPerformanceGuaranteeAmountSubmitted')} isCurrency />
+                                            <DetailRow 
+                                                label="Performance Guarantee Submitted" 
+                                                value={watch('performanceGuaranteeAmountSubmitted')} 
+                                                isCurrency 
+                                                subValue={watch('performanceGuaranteeReleaseStatus') === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                            />
+                                            <DetailRow 
+                                                label="Additional PG Submitted" 
+                                                value={watch('additionalPerformanceGuaranteeAmountSubmitted')} 
+                                                isCurrency 
+                                                subValue={watch('additionalPerformanceGuaranteeReleaseStatus') === 'Released' ? 'Released to Bidder' : 'Withheld'}
+                                            />
                                             <DetailRow label="Supervisor 1" value={watch('supervisor1Name')} subValue={supervisor1Designation} />
                                             <DetailRow label="Supervisor 2" value={watch('supervisor2Name')} subValue={supervisor2Designation} />
                                             <DetailRow label="Supervisor 3" value={watch('supervisor3Name')} subValue={supervisor3Designation} />
