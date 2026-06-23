@@ -1,0 +1,285 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ================= HELPERS ================= */
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
+    }
+
+    function isApproved() {
+      let data = getUserData();
+      return data != null && data.isApproved == true;
+    }
+
+    function getRole() {
+      let data = getUserData();
+      return data != null ? data.role : null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (request.auth.token.email == "keralagwd@gmail.com" || getRole() == "superAdmin");
+    }
+
+    function isSubOfficeAdmin() {
+      return isApproved() && getRole() == 'admin';
+    }
+
+    function isScientist() {
+      return isApproved() && getRole() == 'scientist';
+    }
+
+    function isEngineer() {
+      return isApproved() && getRole() == 'engineer';
+    }
+
+    function isSupervisor() {
+      return isApproved() && getRole() == 'supervisor';
+    }
+    
+    function isInvestigator() {
+      return isApproved() && getRole() == 'investigator';
+    }
+
+    function isViewer() {
+      return isApproved() && getRole() == 'viewer';
+    }
+    
+    function sameOffice(officeId) {
+      let data = getUserData();
+      return data != null &&
+             data.isApproved == true &&
+             'officeLocation' in data &&
+             data.officeLocation.lower() == officeId.lower();
+    }
+
+    /* ================= GLOBAL COLLECTIONS ================= */
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isSubOfficeAdmin() || isSuperAdmin());
+      allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
+      allow create: if isSuperAdmin() || (isSubOfficeAdmin() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower());
+      allow update: if 
+        isSuperAdmin() ||
+        (isApproved() && request.auth.uid == userId) ||
+        (
+          isSubOfficeAdmin() &&
+          get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower() == getUserData().officeLocation.lower() &&
+          request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower() &&
+          request.resource.data.role in ['viewer', 'supervisor', 'investigator'] &&
+          get(/databases/$(database)/documents/users/$(userId)).data.role in ['viewer', 'supervisor', 'investigator']
+        );
+      allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
+    }
+    
+    match /gwdRates/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    match /bidders/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+      allow write: if isSuperAdmin() || isSubOfficeAdmin() || isEngineer();
+    }
+
+    match /rateDescriptions/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+    
+    match /localSelfGovernments/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    match /officeAddresses/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    /* ================= OFFICE SUBCOLLECTIONS ================= */
+
+    match /offices/{officeId} {
+      allow read, write: if isSuperAdmin();
+      
+      function officeRead() {
+        return isSuperAdmin() || sameOffice(officeId);
+      }
+      
+      function canManageAll() {
+        return isSuperAdmin() || (isSubOfficeAdmin() && sameOffice(officeId));
+      }
+
+      function canEditEngineering() {
+        return canManageAll() || (isEngineer() && sameOffice(officeId));
+      }
+
+      function canEditScience() {
+        return canManageAll() || ((isScientist() || isInvestigator()) && sameOffice(officeId));
+      }
+
+      match /users/{userId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
+      }
+
+      match /fileEntries/{docId} {
+        allow get: if officeRead()
+            || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids)
+            || (isInvestigator() && request.auth.uid in resource.data.assignedInvestigatorUids);
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow create, update: if canEditEngineering() || canEditScience();
+      }
+
+      match /arsEntries/{docId} {
+        allow get: if officeRead() || ((isSupervisor() || isInvestigator()) && resource.data.supervisorUid == request.auth.uid);
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+      
+      match /pendingUpdates/{docId} {
+        allow create: if (isSupervisor() || isInvestigator()) && sameOffice(officeId);
+        allow get: if canManageAll() || ((isSupervisor() || isInvestigator()) && resource.data.submittedByUid == request.auth.uid);
+        allow list: if isSignedIn();
+        allow update, delete: if canManageAll();
+      }
+      
+      match /staffMembers/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
+      }
+
+      match /agencyApplications/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+
+      match /eTenders/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+
+      match /departmentVehicles/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+
+      match /hiredVehicles/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+
+      match /rigCompressors/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
+      }
+      
+      match /bidders/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canEditEngineering();
+      }
+      
+      match /localSelfGovernments/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
+      }
+      
+       match /officeAddresses/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
+      }
+
+      match /sanctionedStrength/{docId} {
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
+      }
+    }
+    
+    /* ================= COLLECTION GROUP RULES FOR SUPER ADMIN LISTS ================= */
+
+    match /{path=**}/fileEntries/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/arsEntries/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/staffMembers/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/agencyApplications/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/eTenders/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/departmentVehicles/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/hiredVehicles/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/rigCompressors/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/bidders/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/localSelfGovernments/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/officeAddresses/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+    match /{path=**}/users/{userId} {
+      allow read: if isSuperAdmin();
+    }
+    match /{path=**}/sanctionedStrength/{docId} {
+      allow get: if isApproved();
+      allow list: if isSignedIn();
+    }
+  }
+}

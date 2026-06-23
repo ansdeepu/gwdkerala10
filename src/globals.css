@@ -1,0 +1,347 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%; /* Lighter, very soft blue-gray */
+    --foreground: 210 25% 30%; /* Darker, muted blue-gray for text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 25% 25%; /* Slightly darker text on cards */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 25% 25%;
+
+    --primary: 205 78% 46%;         /* Bright, clear sky blue - Water theme */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    --secondary: 195 50% 90%;       /* Very light aqua/cyan - for subtle backgrounds */
+    --secondary-foreground: 205 70% 40%; /* Medium sky blue text on secondary */
+
+    --muted: 210 30% 94%;           /* Muted light blue-gray */
+    --muted-foreground: 210 15% 55%; /* Muted gray-blue text */
+
+    --accent: 180 65% 45%;           /* Teal/Aqua accent - Water theme */
+    --accent-foreground: 0 0% 100%;   /* White */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 10% 70%;           /* Light blue-gray border */
+    --input: 0 0% 100%;
+    --ring: 180 65% 55%;             /* Accent for focus rings */
+
+    --radius: 0.5rem;
+
+    /* Charts */
+    --chart-1: 205 78% 46%; /* Primary Blue */
+    --chart-2: 180 65% 45%; /* Accent Teal/Aqua */
+    --chart-3: 210 70% 65%; /* Lighter Primary Blue */
+    --chart-4: 170 50% 50%;  /* Seafoam Green */
+    --chart-5: 220 10% 60%; /* Medium Gray */
+    
+    /* Sidebar - Lighter sidebar for light theme */
+    --sidebar-background: 220 25% 96%;      /* Very light cool gray (almost off-white) */
+    --sidebar-foreground: 220 15% 35%;      /* Darker gray text for contrast */
+    --sidebar-primary: 180 65% 45%;         /* Accent Teal/Aqua for active items */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on accent */
+    --sidebar-accent: 220 25% 90%;          /* Slightly darker than new sidebar-bg for hover */
+    --sidebar-accent-foreground: 220 15% 25%;  /* Darker text on hover */
+    --sidebar-border: 220 25% 88%;          /* Lighter border for light sidebar */
+    --sidebar-ring: 180 65% 45%;            /* Matches accent */
+  }
+
+  .dark {
+    --background: 210 25% 10%;      /* Very Dark Desaturated Blue */
+    --foreground: 210 15% 88%;      /* Light Gray-Blue text */
+
+    --card: 210 25% 15%;           /* Darker Desaturated Blue card */
+    --card-foreground: 210 15% 80%;
+
+    --popover: 210 25% 15%;
+    --popover-foreground: 210 15% 80%;
+
+    --primary: 200 70% 60%;         /* Lighter version of primary sky blue for dark mode */
+    --primary-foreground: 0 0% 10%; /* Darker text for contrast */
+
+    --secondary: 210 20% 20%;       /* Dark Desaturated Blue for secondary backgrounds */
+    --secondary-foreground: 210 10% 70%;
+
+    --muted: 210 20% 20%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 180 60% 55%;           /* Lighter Teal/Aqua for dark mode */
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 25%;           /* Darker Blue-Gray border */
+    --input: 210 25% 18%;
+    --ring: 180 60% 55%;
+    
+    /* Charts */
+    --chart-1: 200 70% 60%; 
+    --chart-2: 180 60% 55%; 
+    --chart-3: 210 65% 70%; /* Lighter Primary Blue variant */
+    --chart-4: 170 55% 60%;  /* Lighter Seafoam Green */
+    --chart-5: 220 10% 70%; 
+
+    /* Sidebar for dark mode */
+    --sidebar-background: 210 25% 15%; 
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 180 60% 55%; 
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 210 20% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 25% 20%;
+    --sidebar-ring: 180 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Hide number input arrows */
+@layer utilities {
+  /* Hide number input arrows in WebKit browsers (Chrome, Safari, Edge, Opera) */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Hide number input arrows in Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  /* Marquee styles for Important Updates */
+  .marquee-container-updates {
+    overflow: hidden;
+  }
+  .marquee-content-updates {
+    animation: marquee-vertical-animation-updates 90s linear infinite;
+  }
+  .marquee-container-updates:hover .marquee-content-updates {
+    animation-play-state: paused;
+  }
+  @keyframes marquee-vertical-animation-updates {
+    0%   { transform: translateY(0%); }
+    100% { transform: translateY(-50%); } /* Assumes content is duplicated */
+  }
+
+  /* Marquee styles for Birthdays */
+  .marquee-container-birthdays {
+    overflow: hidden;
+  }
+  .marquee-content-birthdays {
+    animation: marquee-vertical-animation-birthdays 30s linear infinite;
+  }
+  .marquee-container-birthdays:hover .marquee-content-birthdays {
+    animation-play-state: paused;
+  }
+  @keyframes marquee-vertical-animation-birthdays {
+    0%   { transform: translateY(0%); }
+    100% { transform: translateY(-50%); }
+  }
+
+
+  /* Utility to hide scrollbars */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Page transition spinner styles */
+  .page-transition-spinner {
+    @apply fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+}
+
+/* Initially hide elements meant only for print */
+.print-only-block {
+  display: none;
+}
+.print-header-dynamic,
+.print-footer-dynamic {
+  display: none; /* Hidden in screen view by default */
+}
+
+
+/* Print specific styles */
+@media print {
+  /* Hide known app layout components that are not part of the report itself */
+  .no-print,
+  header.sticky, /* AppHeader */
+  div[data-sidebar="sidebar"], /* AppSidebar on desktop */
+  div[data-sidebar="sidebar"][data-mobile="true"], /* AppSidebar on mobile */
+  button[data-sidebar="rail"], /* Sidebar rail if it's part of the DOM and not hidden */
+  /* Hide Toasts during print */
+  div[data-radix-toast-viewport], 
+  div[class*="z-[100]"][class*="fixed"][class*="flex-col-reverse"], /* Mobile-first toast viewport */
+  div[class*="z-[100]"][class*="fixed"][class*="sm:flex-col"] /* Desktop toast viewport */
+  {
+    display: none !important;
+  }
+
+  /* Base HTML and BODY setup for print */
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background-color: #fff !important; /* White background for printing */
+    color: #000 !important; /* Black text */
+    padding-top: 0 !important;  /* Reset padding, handled by print-header/footer if used */
+    padding-bottom: 0 !important; /* Reset padding */
+    margin: 0 !important;
+    font-size: 9pt !important; /* Base font size for print */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* General principle: make sure the main content flows naturally for print */
+  body > div, /* The root div rendered by Next.js body */
+  body div.group\/sidebar-wrapper, /* SidebarProvider's wrapper */
+  body div.group\/sidebar-wrapper > div.flex, /* The main flex container in DashboardLayout */
+  body main[class*="SidebarInset"], /* SidebarInset component */
+  body main[class*="SidebarInset"] > div /* The div DashboardLayout wraps children with */
+  {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background-color: transparent !important; 
+    margin: 0 !important;
+    padding: 0 !important; 
+    box-shadow: none !important;
+    border: none !important;
+    position: static !important;
+    flex: initial !important;
+    flex-direction: initial !important;
+    min-height: auto !important;
+  }
+
+  /* Show elements specifically for printing */
+  .print-only-block {
+    display: block !important;
+    margin-top: 0 !important; 
+    margin-bottom: 0.5rem !important; 
+  }
+    
+  /* Report card specific styling for print */
+  .card-for-print, 
+  #finance-dialog-printable-table-area /* Keeping this in case needed elsewhere, though PDF specific dialog is removed */
+  {
+    display: block !important;
+    position: relative !important; 
+    width: 100% !important;
+    margin: 0 0 1rem 0 !important; /* Add some bottom margin between cards */
+    padding: 0.25rem !important; /* Small padding inside cards */
+    box-shadow: none !important;
+    border: 1px solid #ccc !important; 
+    page-break-inside: avoid !important;
+    height: auto !important;
+    overflow: visible !important;
+    background-color: #fff !important;
+  }
+  
+  .card-for-print .card-header,
+  .card-for-print .card-content,
+  #finance-dialog-printable-table-area .card-header, 
+  #finance-dialog-printable-table-area .card-content
+  {
+    padding: 0.25rem !important;
+  }
+
+  /* Ensure table wrappers inside cards also allow content to be visible */
+  .card-for-print div[class*="overflow-auto"],
+  #finance-dialog-printable-table-area div[class*="overflow-auto"]
+  {
+    display: block !important;
+    border: none !important; 
+    box-shadow: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important; 
+    background-color: transparent !important; 
+    padding: 0 !important; 
+    margin: 0 !important;
+  }
+  
+  /* Table specific styles for all reports and finance dialog */
+  .card-for-print table,
+  #finance-dialog-printable-table-area table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 7pt !important; /* Smaller font for tables to fit more */
+  }
+  
+  .card-for-print tr,
+  #finance-dialog-printable-table-area tr {
+    page-break-inside: avoid !important;
+  }
+
+  .card-for-print th, .card-for-print td,
+  #finance-dialog-printable-table-area th, #finance-dialog-printable-table-area td {
+    border: 1px solid #ddd !important; 
+    padding: 2px !important; /* Reduced padding */
+    color: #000 !important; 
+    word-break: break-word;
+    background-color: #fff !important; 
+    text-align: left !important; /* Default text align for cells */
+  }
+
+  .card-for-print th.text-center, .card-for-print td.text-center,
+  #finance-dialog-printable-table-area th.text-center, #finance-dialog-printable-table-area td.text-center {
+    text-align: center !important;
+  }
+  .card-for-print th.text-right, .card-for-print td.text-right,
+  #finance-dialog-printable-table-area th.text-right, #finance-dialog-printable-table-area td.text-right {
+    text-align: right !important;
+  }
+  
+  .card-for-print th,
+  #finance-dialog-printable-table-area th {
+    background-color: #f0f0f0 !important; /* Lighter grey for headers */
+    font-weight: bold !important;
+  }
+
+  /* Ensure text colors are black */
+  .card-for-print *,
+  #finance-dialog-printable-table-area * {
+     color: #000 !important; 
+  }
+  .card-for-print .text-muted-foreground,
+  #finance-dialog-printable-table-area .text-muted-foreground {
+     color: #333 !important; 
+   }
+}
+
+/* For elements that should ONLY appear in print */
+.print-only {
+  display: none;
+}
+@media print {
+  .print-only {
+    display: block !important;
+  }
+}
