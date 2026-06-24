@@ -11,7 +11,7 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/co
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save, X } from 'lucide-react';
 import type { E_tenderFormData, BasicDetailsFormData } from '@/lib/schemas/eTenderSchema';
-import { formatDateForInput, toDateOrNull } from './utils';
+import { formatDateForInput, toDateOrNull, getRateDetailForDate, calculateStructuredRate } from './utils';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { useDataStore } from '@/hooks/use-data-store';
 import { useTenderData } from './TenderDataContext';
@@ -122,6 +122,7 @@ const DateTimePicker12h = ({
 };
 
 export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: BasicDetailsFormProps) {
+    const { allRateDescriptionDetails } = useDataStore();
     const { tender } = useTenderData();
 
     const form = useForm<BasicDetailsFormData>({
@@ -136,46 +137,68 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
     
     const { control, setValue, handleSubmit, watch } = form;
 
-    const [estimateAmount, tenderType] = watch([
+    const [estimateAmount, tenderType, tenderDate] = watch([
         'estimateAmount',
         'tenderType',
+        'tenderDate',
     ]);
 
     const calculateFees = useCallback(() => {
         const amount = estimateAmount || 0;
-        let fee = 0;
-        let emd = 0;
+        const tDate = toDateOrNull(tenderDate);
+        let fee: number | string = 0;
+        let emd: number | string = 0;
         const roundToNext100 = (num: number) => Math.ceil(num / 100) * 100;
 
-        if (tenderType === 'Work') {
-            if (amount <= 50000) fee = 300;
-            else if (amount <= 1000000) fee = Math.max(500, Math.min(amount * 0.002, 2000));
-            else if (amount <= 10000000) fee = 2500;
-            else if (amount <= 20000000) fee = 5000;
-            else if (amount <= 50000000) fee = 7500;
-            else if (amount <= 100000000) fee = 10000;
-            else fee = 15000;
-            fee = roundToNext100(fee);
-            
-            if (amount <= 20000000) emd = Math.min(amount * 0.025, 50000);
-            else if (amount <= 50000000) emd = 100000;
-            else if (amount <= 100000000) emd = 200000;
-            else emd = 500000;
-            emd = roundToNext100(emd);
+        // Use GWD Rates if available
+        const feeDetail = getRateDetailForDate(allRateDescriptionDetails, 'tenderFee', tDate);
+        const emdDetail = getRateDetailForDate(allRateDescriptionDetails, 'emd', tDate);
 
-        } else if (tenderType === 'Purchase') {
-            if (amount <= 100000) fee = 0;
-            else if (amount <= 1000000) fee = Math.max(400, Math.min(amount * 0.002, 1500));
-            else fee = Math.min(amount * 0.0015, 25000);
-            fee = roundToNext100(fee);
+        if (feeDetail?.structuredData) {
+            fee = calculateStructuredRate(feeDetail.structuredData, tenderType || 'Work', amount);
+        } else {
+            // Fallback to legacy logic if no structured data
+            if (tenderType === 'Work') {
+                if (amount <= 50000) fee = 300;
+                else if (amount <= 1000000) fee = Math.max(500, Math.min(amount * 0.002, 2000));
+                else if (amount <= 10000000) fee = 2500;
+                else if (amount <= 20000000) fee = 5000;
+                else if (amount <= 50000000) fee = 7500;
+                else if (amount <= 100000000) fee = 10000;
+                else fee = 15000;
+            } else if (tenderType === 'Purchase') {
+                if (amount <= 100000) fee = 0;
+                else if (amount <= 1000000) fee = Math.max(400, Math.min(amount * 0.002, 1500));
+                else fee = Math.min(amount * 0.0015, 25000);
+            }
+        }
+        
+        if (typeof fee === 'number') fee = roundToNext100(fee);
+        else if (fee === "No Fee") fee = 0;
+        else fee = parseFloat(String(fee).replace(/[^0-9.]/g, '')) || 0;
 
-            if (amount > 0 && amount <= 20000000) emd = roundToNext100(amount * 0.01);
-            else emd = 0;
+        if (emdDetail?.structuredData) {
+            emd = calculateStructuredRate(emdDetail.structuredData, tenderType || 'Work', amount);
+        } else {
+            // Fallback to legacy logic if no structured data
+            if (tenderType === 'Work') {
+                if (amount <= 20000000) emd = Math.min(amount * 0.025, 50000);
+                else if (amount <= 50000000) emd = 100000;
+                else if (amount <= 100000000) emd = 200000;
+                else emd = 500000;
+            } else if (tenderType === 'Purchase') {
+                if (amount > 0 && amount <= 20000000) emd = amount * 0.01;
+                else emd = 0;
+            }
         }
 
-        setValue('tenderFormFee', fee, { shouldValidate: true, shouldDirty: true });
-        setValue('emd', emd, { shouldValidate: true, shouldDirty: true });
-    }, [estimateAmount, tenderType, setValue]);
+        if (typeof emd === 'number') emd = roundToNext100(emd);
+        else if (emd === "No EMD") emd = 0;
+        else emd = parseFloat(String(emd).replace(/[^0-9.]/g, '')) || 0;
+
+        setValue('tenderFormFee', fee as number, { shouldValidate: true, shouldDirty: true });
+        setValue('emd', emd as number, { shouldValidate: true, shouldDirty: true });
+    }, [estimateAmount, tenderType, tenderDate, allRateDescriptionDetails, setValue]);
 
     useEffect(() => {
         calculateFees();

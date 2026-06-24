@@ -63,9 +63,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
+import { useDataStore, type RateDescriptionId, type RateDescriptionDetail } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
-import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye } from 'lucide-react';
+import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye, Clock, History } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -288,7 +288,7 @@ export default function GwdRatesPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allRateDescriptions, refetchRateDescriptions } = useDataStore();
+  const { allRateDescriptions, allRateDescriptionDetails, refetchRateDescriptions } = useDataStore();
   const router = useRouter();
 
 
@@ -422,26 +422,13 @@ export default function GwdRatesPage() {
             </TabsContent>
             <TabsContent value="eTenderRates">
                <div className="grid grid-cols-1 gap-6 mt-6">
-                <RateDescriptionCard
-                    title="Tender Fee"
-                    description={allRateDescriptions.tenderFee}
-                />
-                <RateDescriptionCard
-                    title="Earnest Money Deposit (EMD)"
-                    description={allRateDescriptions.emd}
-                />
-                <RateDescriptionCard
-                    title="Performance Guarantee"
-                    description={allRateDescriptions.performanceGuarantee}
-                />
-                <RateDescriptionCard
-                    title="Additional Performance Guarantee"
-                    description={allRateDescriptions.additionalPerformanceGuarantee}
-                />
-                <RateDescriptionCard
-                    title="Stamp Paper"
-                    description={allRateDescriptions.stampPaper}
-                />
+                {(['tenderFee', 'emd', 'performanceGuarantee', 'additionalPerformanceGuarantee', 'stampPaper'] as const).map((id) => (
+                    <RateDescriptionCard
+                        key={id}
+                        title={id === 'tenderFee' ? "Tender Fee" : id === 'emd' ? "Earnest Money Deposit (EMD)" : id === 'performanceGuarantee' ? "Performance Guarantee" : id === 'additionalPerformanceGuarantee' ? "Additional Performance Guarantee" : "Stamp Paper"}
+                        detail={allRateDescriptionDetails[id]}
+                    />
+                ))}
               </div>
             </TabsContent>
           </Tabs>
@@ -452,14 +439,129 @@ export default function GwdRatesPage() {
 }
 
 // New component for the rate description card
-const RateDescriptionCard = ({ title, description, onEditClick }: { title: string; description: string; onEditClick?: () => void }) => (
-    <div className="border rounded-lg p-4 bg-background">
-        <div className="flex flex-row items-start justify-between mb-2">
-            <h4 className="text-lg font-semibold text-foreground">{title}</h4>
-            {onEditClick && <Button variant="outline" size="sm" onClick={onEditClick}><Eye className="mr-2 h-4 w-4"/>Update Rate</Button>}
-        </div>
-        <div className="border-t pt-3">
-             <p className="text-sm text-muted-foreground whitespace-pre-wrap" style={{ textAlign: 'justify' }}>{description || "No description provided."}</p>
-        </div>
-    </div>
-);
+const RateDescriptionCard = ({ title, detail }: { title: string; detail: RateDescriptionDetail }) => {
+    const hasStructuredData = !!detail?.structuredData;
+
+    return (
+        <Card className="border rounded-lg overflow-hidden shadow-sm">
+            <CardHeader className="bg-muted/30 border-b py-3 px-4">
+                <div className="flex flex-row items-center justify-between">
+                    <div className="flex flex-col">
+                        <CardTitle className="text-lg font-bold text-primary">{title}</CardTitle>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            {detail?.effectiveDate && (
+                                <CardDescription className="flex items-center gap-1.5 text-xs">
+                                    <Clock className="h-3 w-3" />
+                                    Effective: {format(detail.effectiveDate, 'dd-MM-yyyy')}
+                                    {detail.effectiveTo && ` to ${format(detail.effectiveTo, 'dd-MM-yyyy')}`}
+                                </CardDescription>
+                            )}
+                            {detail?.orderNo && (
+                                <CardDescription className="flex items-center gap-1.5 text-xs">
+                                    <ShieldAlert className="h-3 w-3" />
+                                    Order: {detail.orderNo} {detail.orderDate && `(${format(detail.orderDate, 'dd-MM-yyyy')})`}
+                                </CardDescription>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="p-4 space-y-4">
+                    {!hasStructuredData && detail?.rate && (
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Current Rate:</span>
+                            <span className="text-xl font-bold text-foreground">₹{detail.rate}</span>
+                        </div>
+                    )}
+                    
+                    {hasStructuredData ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <h5 className="text-xs font-bold text-primary uppercase tracking-tight">Works Rates</h5>
+                                <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-muted/50 border-b">
+                                            <tr>
+                                                <th className="p-1.5 text-left font-semibold">Range</th>
+                                                <th className="p-1.5 text-right font-semibold">Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detail.structuredData?.works?.map((row: any, i: number) => (
+                                                <tr key={i} className="border-b last:border-0 odd:bg-background even:bg-muted/10">
+                                                    <td className="p-1.5">{row.label}</td>
+                                                    <td className="p-1.5 text-right font-medium">{row.rate}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <h5 className="text-xs font-bold text-primary uppercase tracking-tight">Purchase Rates</h5>
+                                <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-muted/50 border-b">
+                                            <tr>
+                                                <th className="p-1.5 text-left font-semibold">Range</th>
+                                                <th className="p-1.5 text-right font-semibold">Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detail.structuredData?.purchase?.map((row: any, i: number) => (
+                                                <tr key={i} className="border-b last:border-0 odd:bg-background even:bg-muted/10">
+                                                    <td className="p-1.5">{row.label}</td>
+                                                    <td className="p-1.5 text-right font-medium">{row.rate}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-muted/10 rounded-md p-3 border border-dashed">
+                            <h5 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Description</h5>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                                {detail?.description || "No description provided."}
+                            </p>
+                        </div>
+                    )}
+
+                    {detail?.history && detail.history.length > 0 && (
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="history" className="border-none">
+                                <AccordionTrigger className="py-2 hover:no-underline text-sm font-medium text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <History className="h-4 w-4" />
+                                        View Rate History ({detail.history.length})
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-2">
+                                    <div className="space-y-3">
+                                        {detail.history.map((h, i) => (
+                                            <div key={i} className="bg-muted/20 rounded p-3 border text-xs space-y-2">
+                                                <div className="flex flex-wrap justify-between items-center gap-2 font-semibold text-primary/80">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>Eff: {format(h.effectiveDate, 'dd-MM-yyyy')}</span>
+                                                        {h.effectiveTo && <span>to {format(h.effectiveTo, 'dd-MM-yyyy')}</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        {h.orderNo && <span>Order: {h.orderNo}</span>}
+                                                        {h.rate && <span>Rate: ₹{h.rate}</span>}
+                                                    </div>
+                                                </div>
+                                                <p className="text-muted-foreground whitespace-pre-wrap">{h.description}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};

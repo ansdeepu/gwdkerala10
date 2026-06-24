@@ -47,6 +47,28 @@ const processFirestoreDoc = <T,>(docSnap: any): T => {
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
+export interface RateHistoryItem {
+    description: string;
+    rate?: string;
+    orderNo?: string;
+    orderDate?: Date;
+    effectiveDate: Date;
+    effectiveTo?: Date;
+    updatedAt: Date;
+    structuredData?: any;
+}
+
+export interface RateDescriptionDetail {
+    description: string;
+    rate?: string;
+    orderNo?: string;
+    orderDate?: Date;
+    effectiveDate?: Date;
+    effectiveTo?: Date;
+    history?: RateHistoryItem[];
+    structuredData?: any;
+}
+
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
     emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
@@ -71,6 +93,7 @@ interface DataStoreContextType {
     allAgencyApplications: AgencyApplication[];
     allLsgConstituencyMaps: LsgConstituencyMap[];
     allRateDescriptions: Record<RateDescriptionId, string>;
+    allRateDescriptionDetails: Record<RateDescriptionId, RateDescriptionDetail>;
     allBidders: MasterBidder[];
     allE_tenders: E_tender[];
     allDepartmentVehicles: DepartmentVehicle[];
@@ -108,6 +131,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allAgencyApplications, setAllAgencyApplications] = useState<AgencyApplication[]>([]);
     const [allLsgConstituencyMaps, setAllLsgConstituencyMaps] = useState<LsgConstituencyMap[]>([]);
     const [allRateDescriptions, setAllRateDescriptions] = useState<Record<RateDescriptionId, string>>(defaultRateDescriptions);
+    const [allRateDescriptionDetails, setAllRateDescriptionDetails] = useState<Record<RateDescriptionId, RateDescriptionDetail>>({} as Record<RateDescriptionId, RateDescriptionDetail>);
     const [allBidders, setAllBidders] = useState<MasterBidder[]>([]);
     const [allE_tenders, setAllE_tenders] = useState<E_tender[]>([]);
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
@@ -174,8 +198,34 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(queryFn(), (snapshot: QuerySnapshot<DocumentData>) => {
                 if (collectionName === 'rateDescriptions') {
-                    const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
-                    setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
+                    const descriptions: Record<RateDescriptionId, string> = {};
+                    const details: Record<RateDescriptionId, RateDescriptionDetail> = {} as Record<RateDescriptionId, RateDescriptionDetail>;
+
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        const id = doc.id as RateDescriptionId;
+                        descriptions[id] = data.description || '';
+                        
+                        details[id] = {
+                            description: data.description || '',
+                            rate: data.rate || '',
+                            orderNo: data.orderNo || '',
+                            orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : undefined,
+                            effectiveDate: data.effectiveDate instanceof Timestamp ? data.effectiveDate.toDate() : undefined,
+                            effectiveTo: data.effectiveTo instanceof Timestamp ? data.effectiveTo.toDate() : undefined,
+                            structuredData: data.structuredData || null,
+                            history: Array.isArray(data.history) ? data.history.map((h: any) => ({
+                                ...h,
+                                orderDate: h.orderDate instanceof Timestamp ? h.orderDate.toDate() : (h.orderDate ? new Date(h.orderDate) : undefined),
+                                effectiveDate: h.effectiveDate instanceof Timestamp ? h.effectiveDate.toDate() : (h.effectiveDate ? new Date(h.effectiveDate) : new Date()),
+                                effectiveTo: h.effectiveTo instanceof Timestamp ? h.effectiveTo.toDate() : (h.effectiveTo ? new Date(h.effectiveTo) : undefined),
+                                updatedAt: h.updatedAt instanceof Timestamp ? h.updatedAt.toDate() : (h.updatedAt ? new Date(h.updatedAt) : new Date()),
+                            })) : []
+                        };
+                    });
+
+                    setAllRateDescriptions((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
+                    setAllRateDescriptionDetails(prev => ({ ...prev, ...details }));
                 } else {
                     const data = snapshot.docs.map(doc => processFirestoreDoc(doc));
                     setter(data);
@@ -423,6 +473,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     return (
         <DataStoreContext.Provider value={{
             selectedOffice, setSelectedOffice, allUsers, allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
+            allRateDescriptionDetails,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allSanctionedStrength, updateSanctionedStrength, allOfficeAddresses: globalOfficeAddresses, officeAddress, isLoading,
             searchTerms, setModuleSearchTerm, clearAllSearchTerms,

@@ -62,9 +62,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
+import { useDataStore, type RateDescriptionId, type RateDescriptionDetail } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
-import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye, Move } from 'lucide-react';
+import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye, Move, Clock, History, FileText, Calendar } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -288,7 +288,7 @@ export default function GwdRatesPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allRateDescriptions, refetchRateDescriptions } = useDataStore();
+  const { allRateDescriptions, allRateDescriptionDetails, refetchRateDescriptions } = useDataStore();
   const router = useRouter();
 
 
@@ -412,25 +412,246 @@ export default function GwdRatesPage() {
     }
   };
 
-  const handleOpenRateDescriptionEditor = (id: RateDescriptionId, title: string) => {
+  const handleOpenRateDescriptionEditor = (id: RateDescriptionId, title: string, section?: 'works' | 'purchase') => {
     if (!canManage) return;
-    setEditingRate({ id, title });
+    setEditingRate({ id, title, section });
   };
   
-  const handleSaveRateDescription = async (newDescription: string) => {
+  const handleSaveRateDescription = async (
+    newDescription: string, 
+    newRate?: string, 
+    effectiveDate?: Date,
+    orderNo?: string,
+    orderDate?: Date,
+    effectiveTo?: Date,
+    structuredData?: any
+  ) => {
     if (!editingRate || !canManage) return;
 
     setIsSubmitting(true);
     try {
         const docRef = doc(db, RATE_DESCRIPTIONS_COLLECTION, editingRate.id);
-        await setDoc(docRef, { description: newDescription, updatedAt: serverTimestamp() }, { merge: true });
+        const currentDetail = allRateDescriptionDetails[editingRate.id];
+        
+        let history = currentDetail?.history || [];
+        
+        // Updated logic: Only create a history entry if "effectiveTo" (With Effect To) date is provided.
+        // This signifies the current rate is ending and should be archived.
+        if (currentDetail && effectiveTo) {
+            history = [
+                {
+                    description: currentDetail.description || '',
+                    rate: currentDetail.rate || '',
+                    orderNo: currentDetail.orderNo || '',
+                    orderDate: currentDetail.orderDate || null,
+                    effectiveDate: currentDetail.effectiveDate || (currentDetail.updatedAt ? (currentDetail.updatedAt instanceof Timestamp ? currentDetail.updatedAt.toDate() : new Date(currentDetail.updatedAt)) : new Date()),
+                    effectiveTo: Timestamp.fromDate(effectiveTo),
+                    structuredData: currentDetail.structuredData || null,
+                    updatedAt: new Date(),
+                },
+                ...history
+            ];
+        }
+
+        let updatedData: any = {
+            orderNo: orderNo || '',
+            orderDate: orderDate ? Timestamp.fromDate(orderDate) : null,
+            effectiveDate: effectiveDate ? Timestamp.fromDate(effectiveDate) : serverTimestamp(),
+            effectiveTo: effectiveTo ? Timestamp.fromDate(effectiveTo) : null,
+            history: history,
+            updatedAt: serverTimestamp() 
+        };
+
+        if (effectiveTo) {
+            // Clear current fields because this rate is now archived
+            updatedData.description = "";
+            updatedData.rate = "";
+            updatedData.orderNo = "";
+            updatedData.orderDate = null;
+            updatedData.effectiveDate = serverTimestamp();
+            updatedData.effectiveTo = null;
+            updatedData.structuredData = null;
+        } else if (editingRate.section) {
+            // Partial update for structured data
+            const existingStructuredData = currentDetail?.structuredData || { works: [], purchase: [] };
+            const newStructuredData = { 
+                works: Array.isArray(existingStructuredData.works) ? existingStructuredData.works : [], 
+                purchase: Array.isArray(existingStructuredData.purchase) ? existingStructuredData.purchase : [],
+                worksMetadata: existingStructuredData.worksMetadata || null,
+                purchaseMetadata: existingStructuredData.purchaseMetadata || null
+            };
+
+            const sectionMetadata = {
+                orderNo: orderNo || '',
+                orderDate: orderDate ? Timestamp.fromDate(orderDate) : null,
+                effectiveDate: effectiveDate ? Timestamp.fromDate(effectiveDate) : serverTimestamp(),
+                effectiveTo: null,
+            };
+
+            if (editingRate.section === 'works') {
+                newStructuredData.works = structuredData?.works || [];
+                newStructuredData.worksMetadata = sectionMetadata;
+            } else {
+                newStructuredData.purchase = structuredData?.purchase || [];
+                newStructuredData.purchaseMetadata = sectionMetadata;
+            }
+            updatedData.structuredData = newStructuredData;
+            
+            // Re-generate description
+            const rateTitle = editingRate.id === 'tenderFee' ? 'Tender Fee' : 'EMD';
+            let desc = `${rateTitle} For Works:\n`;
+            newStructuredData.works.forEach((row: any) => {
+                desc += `- ${row.label}: ${row.rate || "N/A"}\n`;
+            });
+            desc += `\n${rateTitle} For Purchase:\n`;
+            newStructuredData.purchase.forEach((row: any) => {
+                desc += `- ${row.label}: ${row.rate || "N/A"}\n`;
+            });
+            updatedData.description = desc;
+            updatedData.rate = '';
+        } else {
+            updatedData.description = newDescription;
+            updatedData.rate = newRate || '';
+            updatedData.structuredData = structuredData || null;
+        }
+
+        // Deeply clean undefined values just in case
+        const cleanForFirestore = (obj: any): any => {
+            if (obj === undefined) return null;
+            if (obj === null || typeof obj !== 'object' || obj instanceof Timestamp || obj instanceof Date) return obj;
+            if (Array.isArray(obj)) return obj.map(cleanForFirestore);
+            
+            const cleaned: any = {};
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = cleanForFirestore(obj[key]);
+                    if (value !== undefined) {
+                        cleaned[key] = value;
+                    }
+                }
+            }
+            return cleaned;
+        };
+
+        await setDoc(docRef, cleanForFirestore(updatedData), { merge: true });
+        
         refetchRateDescriptions();
-        toast({ title: `${editingRate.title} Updated`, description: 'The description has been saved.' });
+        toast({ title: `${editingRate.title} Updated`, description: 'The rate and history have been updated.' });
     } catch (error: any) {
         console.error("Error saving rate description:", error);
         toast({ title: "Save Failed", description: error.message, variant: "destructive" });
     } finally {
         setEditingRate(null);
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteHistory = async (rateId: RateDescriptionId, historyIndex: number) => {
+    if (!canManage) return;
+    
+    // Deeply clean undefined values for Firestore
+    const cleanForFirestore = (obj: any): any => {
+        if (obj === undefined) return null;
+        if (obj === null || typeof obj !== 'object' || obj instanceof Timestamp || obj instanceof Date) return obj;
+        if (Array.isArray(obj)) return obj.map(cleanForFirestore);
+        
+        const cleaned: any = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = cleanForFirestore(obj[key]);
+                if (value !== undefined) {
+                    cleaned[key] = value;
+                }
+            }
+        }
+        return cleaned;
+    };
+
+    setIsSubmitting(true);
+    try {
+        const docRef = doc(db, RATE_DESCRIPTIONS_COLLECTION, rateId);
+        const currentDetail = allRateDescriptionDetails[rateId];
+        if (!currentDetail?.history) return;
+        
+        const newHistory = [...currentDetail.history];
+        newHistory.splice(historyIndex, 1);
+        
+        await updateDoc(docRef, { history: cleanForFirestore(newHistory) });
+        refetchRateDescriptions();
+        toast({ title: "History Deleted", description: "The history entry has been removed." });
+    } catch (error: any) {
+        console.error("Error deleting history:", error);
+        toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleEditHistory = async (rateId: RateDescriptionId, historyIndex: number) => {
+    // For simplicity, we'll swap current with history entry
+    if (!canManage) return;
+    
+    // Deeply clean undefined values for Firestore
+    const cleanForFirestore = (obj: any): any => {
+        if (obj === undefined) return null;
+        if (obj === null || typeof obj !== 'object' || obj instanceof Timestamp || obj instanceof Date) return obj;
+        if (Array.isArray(obj)) return obj.map(cleanForFirestore);
+        
+        const cleaned: any = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = cleanForFirestore(obj[key]);
+                if (value !== undefined) {
+                    cleaned[key] = value;
+                }
+            }
+        }
+        return cleaned;
+    };
+
+    setIsSubmitting(true);
+    try {
+        const docRef = doc(db, RATE_DESCRIPTIONS_COLLECTION, rateId);
+        const currentDetail = allRateDescriptionDetails[rateId];
+        if (!currentDetail?.history) return;
+        
+        const historyItem = currentDetail.history[historyIndex];
+        
+        // Swap
+        const currentData = {
+            description: currentDetail.description || '',
+            rate: currentDetail.rate || '',
+            orderNo: currentDetail.orderNo || '',
+            orderDate: currentDetail.orderDate || null,
+            effectiveDate: currentDetail.effectiveDate || new Date(),
+            effectiveTo: currentDetail.effectiveTo || null,
+            structuredData: currentDetail.structuredData || null,
+            updatedAt: new Date(),
+        };
+        
+        const newHistory = [...currentDetail.history];
+        newHistory[historyIndex] = currentData;
+        
+        const updatePayload = {
+            description: historyItem.description || '',
+            rate: historyItem.rate || '',
+            orderNo: historyItem.orderNo || '',
+            orderDate: historyItem.orderDate ? Timestamp.fromDate(historyItem.orderDate) : null,
+            effectiveDate: historyItem.effectiveDate ? Timestamp.fromDate(historyItem.effectiveDate) : null,
+            effectiveTo: historyItem.effectiveTo ? Timestamp.fromDate(historyItem.effectiveTo) : null,
+            structuredData: historyItem.structuredData || null,
+            history: newHistory,
+            updatedAt: serverTimestamp()
+        };
+        
+        await updateDoc(docRef, cleanForFirestore(updatePayload));
+        
+        refetchRateDescriptions();
+        toast({ title: "Restored from History", description: "Current rate has been replaced with history entry." });
+    } catch (error: any) {
+        console.error("Error restoring history:", error);
+        toast({ title: "Restore Failed", description: error.message, variant: "destructive" });
+    } finally {
         setIsSubmitting(false);
     }
   };
@@ -566,31 +787,17 @@ export default function GwdRatesPage() {
             </TabsContent>
             <TabsContent value="eTenderRates">
                <div className="grid grid-cols-1 gap-6 mt-6">
-                <RateDescriptionCard
-                    title="Tender Fee"
-                    description={allRateDescriptions.tenderFee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('tenderFee', "Tender Fee") : undefined}
-                />
-                <RateDescriptionCard
-                    title="Earnest Money Deposit (EMD)"
-                    description={allRateDescriptions.emd}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('emd', "Earnest Money Deposit (EMD)") : undefined}
-                />
-                <RateDescriptionCard
-                    title="Performance Guarantee"
-                    description={allRateDescriptions.performanceGuarantee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('performanceGuarantee', "Performance Guarantee") : undefined}
-                />
-                <RateDescriptionCard
-                    title="Additional Performance Guarantee"
-                    description={allRateDescriptions.additionalPerformanceGuarantee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('additionalPerformanceGuarantee', "Additional Performance Guarantee") : undefined}
-                />
-                <RateDescriptionCard
-                    title="Stamp Paper"
-                    description={allRateDescriptions.stampPaper}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('stampPaper', "Stamp Paper") : undefined}
-                />
+                {(['tenderFee', 'emd', 'performanceGuarantee', 'additionalPerformanceGuarantee', 'stampPaper'] as const).map((id) => (
+                    <RateDescriptionCard
+                        key={id}
+                        rateId={id}
+                        title={id === 'tenderFee' ? "Tender Fee" : id === 'emd' ? "Earnest Money Deposit (EMD)" : id === 'performanceGuarantee' ? "Performance Guarantee" : id === 'additionalPerformanceGuarantee' ? "Additional Performance Guarantee" : "Stamp Paper"}
+                        detail={allRateDescriptionDetails[id]}
+                        onEditClick={canManage ? (section) => handleOpenRateDescriptionEditor(id, id === 'tenderFee' ? "Tender Fee" : id === 'emd' ? "Earnest Money Deposit (EMD)" : id === 'performanceGuarantee' ? "Performance Guarantee" : id === 'additionalPerformanceGuarantee' ? "Additional Performance Guarantee" : "Stamp Paper", section) : undefined}
+                        onDeleteHistory={(idx) => handleDeleteHistory(id, idx)}
+                        onEditHistory={(idx) => handleEditHistory(id, idx)}
+                    />
+                ))}
               </div>
             </TabsContent>
           </Tabs>
@@ -698,7 +905,8 @@ export default function GwdRatesPage() {
             isOpen={!!editingRate}
             onClose={() => setEditingRate(null)}
             title={editingRate.title}
-            initialDescription={allRateDescriptions[editingRate.id]}
+            section={editingRate.section}
+            initialDetail={allRateDescriptionDetails[editingRate.id]}
             onSave={handleSaveRateDescription}
             isSaving={isSubmitting}
         />
@@ -708,45 +916,514 @@ export default function GwdRatesPage() {
 }
 
 // New component for the rate description card
-const RateDescriptionCard = ({ title, description, onEditClick }: { title: string; description: string; onEditClick?: () => void }) => (
-    <div className="border rounded-lg p-4 bg-background">
-        <div className="flex flex-row items-start justify-between mb-2">
-            <h4 className="text-lg font-semibold text-foreground">{title}</h4>
-            {onEditClick && <Button variant="outline" size="sm" onClick={onEditClick}><Eye className="mr-2 h-4 w-4"/>Update Rate</Button>}
-        </div>
-        <div className="border-t pt-3">
-             <p className="text-sm text-muted-foreground whitespace-pre-wrap" style={{ textAlign: 'justify' }}>{description || "No description provided."}</p>
-        </div>
-    </div>
-);
+const RateDescriptionCard = ({ 
+    rateId, 
+    title, 
+    detail, 
+    onEditClick,
+    onDeleteHistory,
+    onEditHistory
+}: { 
+    rateId: RateDescriptionId;
+    title: string; 
+    detail: RateDescriptionDetail; 
+    onEditClick?: (section?: 'works' | 'purchase') => void;
+    onDeleteHistory?: (index: number) => void;
+    onEditHistory?: (index: number) => void;
+}) => {
+    const hasStructuredData = !!detail?.structuredData;
+    const isMultiSection = hasStructuredData || rateId === 'tenderFee' || rateId === 'emd';
+
+    return (
+        <Card className="border rounded-lg overflow-hidden shadow-sm">
+            <CardHeader className="bg-muted/30 border-b py-3 px-4">
+                <div className="flex flex-row items-center justify-between">
+                    <div className="flex flex-col">
+                        <CardTitle className="text-lg font-bold text-primary">{title}</CardTitle>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            {!isMultiSection && detail?.effectiveDate && (
+                                <CardDescription className="flex items-center gap-1.5 text-xs">
+                                    <Clock className="h-3 w-3" />
+                                    Effective: {format(detail.effectiveDate, 'dd-MM-yyyy')}
+                                    {detail.effectiveTo && ` to ${format(detail.effectiveTo, 'dd-MM-yyyy')}`}
+                                </CardDescription>
+                            )}
+                            {!isMultiSection && detail?.orderNo && (
+                                <CardDescription className="flex items-center gap-1.5 text-xs">
+                                    <ShieldAlert className="h-3 w-3" />
+                                    Order: {detail.orderNo} {detail.orderDate && `(${format(detail.orderDate, 'dd-MM-yyyy')})`}
+                                </CardDescription>
+                            )}
+                        </div>
+                    </div>
+                    {onEditClick && !isMultiSection && (
+                        <Button variant="outline" size="sm" onClick={() => onEditClick()} className="bg-background">
+                            <PlusCircle className="mr-2 h-4 w-4"/>Update Rate
+                        </Button>
+                    )}
+                    {onEditClick && isMultiSection && (
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => onEditClick('works')} className="bg-background">
+                                <PlusCircle className="mr-2 h-4 w-4"/>Update Works
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => onEditClick('purchase')} className="bg-background">
+                                <PlusCircle className="mr-2 h-4 w-4"/>Update Purchase
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="p-4 space-y-4">
+                    {!hasStructuredData && detail?.rate && (
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Current Rate:</span>
+                            <span className="text-xl font-bold text-foreground">₹{detail.rate}</span>
+                        </div>
+                    )}
+                    
+                    {hasStructuredData ? (
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <h5 className="text-xs font-bold text-primary uppercase tracking-tight">{title} - Works Rates</h5>
+                                    {(detail.structuredData?.worksMetadata || (!detail.structuredData?.worksMetadata && detail.effectiveDate)) && (
+                                        <div className="flex flex-wrap justify-end gap-x-2 gap-y-1 text-[10px] uppercase font-bold">
+                                            {(detail.structuredData?.worksMetadata?.orderNo || detail.orderNo) && (
+                                                <span className="flex items-center gap-1 bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                                                    <FileText className="h-2.5 w-2.5" />
+                                                    Order No: {detail.structuredData?.worksMetadata?.orderNo || detail.orderNo}
+                                                </span>
+                                            )}
+                                            {(detail.structuredData?.worksMetadata?.effectiveDate || detail.effectiveDate) && (
+                                                <span className="flex items-center gap-1 bg-muted text-muted-foreground px-1.5 py-0.5 rounded border">
+                                                    <Calendar className="h-2.5 w-2.5" />
+                                                    Effective Date: {format(detail.structuredData?.worksMetadata?.effectiveDate ? (detail.structuredData.worksMetadata.effectiveDate instanceof Timestamp ? detail.structuredData.worksMetadata.effectiveDate.toDate() : new Date(detail.structuredData.worksMetadata.effectiveDate)) : detail.effectiveDate, 'dd-MM-yyyy')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-muted/50 border-b">
+                                            <tr>
+                                                <th className="p-1.5 text-left font-semibold">Range</th>
+                                                <th className="p-1.5 text-right font-semibold">Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detail.structuredData?.works?.map((row: any, i: number) => (
+                                                <tr key={i} className="border-b last:border-0 odd:bg-background even:bg-muted/10">
+                                                    <td className="p-1.5">{row.label}</td>
+                                                    <td className="p-1.5 text-right font-medium">{row.rate}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <h5 className="text-xs font-bold text-primary uppercase tracking-tight">{title} - Purchase Rates</h5>
+                                    {(detail.structuredData?.purchaseMetadata || (!detail.structuredData?.purchaseMetadata && detail.effectiveDate)) && (
+                                        <div className="flex flex-wrap justify-end gap-x-2 gap-y-1 text-[10px] uppercase font-bold">
+                                            {(detail.structuredData?.purchaseMetadata?.orderNo || detail.orderNo) && (
+                                                <span className="flex items-center gap-1 bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                                                    <FileText className="h-2.5 w-2.5" />
+                                                    Order No: {detail.structuredData?.purchaseMetadata?.orderNo || detail.orderNo}
+                                                </span>
+                                            )}
+                                            {(detail.structuredData?.purchaseMetadata?.effectiveDate || detail.effectiveDate) && (
+                                                <span className="flex items-center gap-1 bg-muted text-muted-foreground px-1.5 py-0.5 rounded border">
+                                                    <Calendar className="h-2.5 w-2.5" />
+                                                    Effective Date: {format(detail.structuredData?.purchaseMetadata?.effectiveDate ? (detail.structuredData.purchaseMetadata.effectiveDate instanceof Timestamp ? detail.structuredData.purchaseMetadata.effectiveDate.toDate() : new Date(detail.structuredData.purchaseMetadata.effectiveDate)) : detail.effectiveDate, 'dd-MM-yyyy')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="border rounded overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-muted/50 border-b">
+                                            <tr>
+                                                <th className="p-1.5 text-left font-semibold">Range</th>
+                                                <th className="p-1.5 text-right font-semibold">Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detail.structuredData?.purchase?.map((row: any, i: number) => (
+                                                <tr key={i} className="border-b last:border-0 odd:bg-background even:bg-muted/10">
+                                                    <td className="p-1.5">{row.label}</td>
+                                                    <td className="p-1.5 text-right font-medium">{row.rate}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-muted/10 rounded-md p-3 border border-dashed">
+                            <h5 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Description</h5>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                                {detail?.description || "No description provided."}
+                            </p>
+                        </div>
+                    )}
+
+                    {detail?.history && detail.history.length > 0 && (
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="history" className="border-none">
+                                <AccordionTrigger className="py-2 hover:no-underline text-sm font-medium text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <History className="h-4 w-4" />
+                                        View Rate History ({detail.history.length})
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-2">
+                                    <div className="space-y-3">
+                                        {detail.history.map((h, i) => (
+                                            <div key={i} className="bg-muted/20 rounded p-3 border text-xs space-y-2 group relative">
+                                                <div className="flex flex-wrap justify-between items-center gap-2 font-semibold text-primary/80">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>Eff: {format(h.effectiveDate, 'dd-MM-yyyy')}</span>
+                                                        {h.effectiveTo && <span>to {format(h.effectiveTo, 'dd-MM-yyyy')}</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        {h.orderNo && <span>Order: {h.orderNo}</span>}
+                                                        {h.rate && <span>Rate: ₹{h.rate}</span>}
+                                                    </div>
+                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 absolute top-2 right-2">
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => onEditHistory?.(i)}>
+                                                            <Eye className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDeleteHistory?.(i)}>
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <p className="text-muted-foreground whitespace-pre-wrap">{h.description}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
 
 // New component for the edit description dialog
-const EditRateDescriptionDialog = ({ isOpen, onClose, title, initialDescription, onSave, isSaving }: { isOpen: boolean; onClose: () => void; title: string; initialDescription: string; onSave: (newDescription: string) => void, isSaving: boolean }) => {
-    const [description, setDescription] = useState(initialDescription);
+const EditRateDescriptionDialog = ({ isOpen, onClose, title, section, initialDetail, onSave, isSaving }: { isOpen: boolean; onClose: () => void; title: string; section?: 'works' | 'purchase'; initialDetail: RateDescriptionDetail; onSave: (newDescription: string, newRate?: string, effectiveDate?: Date, orderNo?: string, orderDate?: Date, effectiveTo?: Date, structuredData?: any) => void, isSaving: boolean }) => {
+    const [description, setDescription] = useState("");
+    const [rate, setRate] = useState("");
+    const [orderNo, setOrderNo] = useState("");
+    const [orderDate, setOrderDate] = useState("");
+    const [effectiveDate, setEffectiveDate] = useState("");
+    const [effectiveTo, setEffectiveTo] = useState("");
     
+    // Structured data for Tender Fee
+    const [worksRows, setWorksRows] = useState<{ label: string, rate: string }[]>([]);
+    const [purchaseRows, setPurchaseRows] = useState<{ label: string, rate: string }[]>([]);
+
+    const isTenderFee = title === "Tender Fee";
+    const isEMD = title === "Earnest Money Deposit (EMD)";
+    const useStructuredData = isTenderFee || isEMD;
+
+    const isPerformanceGuarantee = title === "Performance Guarantee";
+    const isAdditionalPerformanceGuarantee = title === "Additional Performance Guarantee";
+    const isStampPaper = title === "Stamp Paper";
+    const hideRateField = useStructuredData || isPerformanceGuarantee || isAdditionalPerformanceGuarantee || isStampPaper;
+    
+    useEffect(() => {
+        if (isOpen && initialDetail) {
+            setDescription(initialDetail.description || "");
+            setRate(initialDetail.rate || "");
+            
+            // Load section specific metadata if editing a section
+            const sd = initialDetail.structuredData;
+            const sectionMeta = section === 'works' ? sd?.worksMetadata : (section === 'purchase' ? sd?.purchaseMetadata : null);
+            
+            if (sectionMeta) {
+                setOrderNo(sectionMeta.orderNo || "");
+                setOrderDate(sectionMeta.orderDate ? format(sectionMeta.orderDate instanceof Timestamp ? sectionMeta.orderDate.toDate() : new Date(sectionMeta.orderDate), 'yyyy-MM-dd') : "");
+                setEffectiveDate(sectionMeta.effectiveDate ? format(sectionMeta.effectiveDate instanceof Timestamp ? sectionMeta.effectiveDate.toDate() : new Date(sectionMeta.effectiveDate), 'yyyy-MM-dd') : "");
+                setEffectiveTo(sectionMeta.effectiveTo ? format(sectionMeta.effectiveTo instanceof Timestamp ? sectionMeta.effectiveTo.toDate() : new Date(sectionMeta.effectiveTo), 'yyyy-MM-dd') : "");
+            } else {
+                setOrderNo(initialDetail.orderNo || "");
+                setOrderDate(initialDetail.orderDate ? format(initialDetail.orderDate, 'yyyy-MM-dd') : "");
+                setEffectiveDate(initialDetail.effectiveDate ? format(initialDetail.effectiveDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+                setEffectiveTo(initialDetail.effectiveTo ? format(initialDetail.effectiveTo, 'yyyy-MM-dd') : "");
+            }
+            
+            if (useStructuredData) {
+                if (initialDetail.structuredData) {
+                    setWorksRows(initialDetail.structuredData.works || []);
+                    setPurchaseRows(initialDetail.structuredData.purchase || []);
+                } else if (isTenderFee) {
+                    // Default rows for Works
+                    setWorksRows([
+                        { label: "Upto Rs. 50,000", rate: "No Fee" },
+                        { label: "Above Rs. 50,000 - upto Rs. 10 Lakh", rate: "" },
+                        { label: "Above Rs. 10 Lakh - upto Rs. 1 crore", rate: "" },
+                        { label: "Above Rs. 1 crore - upto Rs. 2 Crore", rate: "" },
+                        { label: "Above Rs. 2 crore - upto Rs. 5 crore", rate: "" },
+                        { label: "Above Rs. 5 crore - upto Rs. 10 crore", rate: "" },
+                        { label: "Above Rs. 10 crore", rate: "" },
+                    ]);
+                    // Default rows for Purchase
+                    setPurchaseRows([
+                        { label: "Over 1 Lakh up to 10 Lakhs", rate: "" },
+                        { label: "Over 10 Lakhs up to 25 Lakhs", rate: "" },
+                        { label: "Above 25 Lakhs", rate: "" },
+                    ]);
+                } else if (isEMD) {
+                    // Default rows for Works EMD
+                    setWorksRows([
+                        { label: "Up to Rs. 2 Crore", rate: "2.5% (Max Rs. 50,000)" },
+                        { label: "Above Rs. 2 Crore up to Rs. 5 Crore", rate: "Rs. 1 Lakh" },
+                        { label: "Above Rs. 5 Crore up to Rs. 10 Crore", rate: "Rs. 2 Lakh" },
+                        { label: "Above Rs. 10 Crore", rate: "Rs. 5 Lakh" },
+                    ]);
+                    // Default rows for Purchase EMD
+                    setPurchaseRows([
+                        { label: "Up to 2 Crore", rate: "1%" },
+                        { label: "Above 2 Crore", rate: "No EMD" },
+                    ]);
+                }
+            }
+        }
+    }, [isOpen, initialDetail, isTenderFee, isEMD, useStructuredData, section]);
+
+    const handleAddWorksRow = () => setWorksRows([...worksRows, { label: "", rate: "" }]);
+    const handleRemoveWorksRow = (index: number) => setWorksRows(worksRows.filter((_, i) => i !== index));
+    const handleWorksRowChange = (index: number, field: 'label' | 'rate', value: string) => {
+        const newRows = [...worksRows];
+        newRows[index][field] = value;
+        setWorksRows(newRows);
+    };
+
+    const handleAddPurchaseRow = () => setPurchaseRows([...purchaseRows, { label: "", rate: "" }]);
+    const handleRemovePurchaseRow = (index: number) => setPurchaseRows(purchaseRows.filter((_, i) => i !== index));
+    const handlePurchaseRowChange = (index: number, field: 'label' | 'rate', value: string) => {
+        const newRows = [...purchaseRows];
+        newRows[index][field] = value;
+        setPurchaseRows(newRows);
+    };
+
     const handleSave = () => {
-        onSave(description);
+        let finalDescription = description;
+        let structuredData = null;
+
+        if (useStructuredData) {
+            structuredData = { works: worksRows, purchase: purchaseRows };
+            // Generate description from structured data for backward compatibility
+            let desc = "For Works:\n";
+            worksRows.forEach(row => {
+                desc += `- ${row.label}: ${row.rate || "N/A"}\n`;
+            });
+            desc += "\nFor Purchase:\n";
+            purchaseRows.forEach(row => {
+                desc += `- ${row.label}: ${row.rate || "N/A"}\n`;
+            });
+            finalDescription = desc;
+        }
+
+        onSave(
+            finalDescription, 
+            hideRateField ? "" : rate,
+            effectiveDate ? new Date(effectiveDate) : undefined,
+            orderNo,
+            orderDate ? new Date(orderDate) : undefined,
+            effectiveTo ? new Date(effectiveTo) : undefined,
+            structuredData
+        );
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl">
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>Edit Rate Description: {title}</DialogTitle>
+                    <DialogTitle>Update Rate: {title} {section ? `(${section === 'works' ? 'Works' : 'Purchase'})` : ''}</DialogTitle>
+                    <DialogDescription>
+                        Update the current rate and terms. Previous values will be archived in history.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="px-6 space-y-4">
-                    <Textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows={10}
-                        placeholder="Enter the rate description..."
-                    />
+                <div className="px-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="orderNo">Order No</Label>
+                            <Input
+                                id="orderNo"
+                                value={orderNo}
+                                onChange={(e) => setOrderNo(e.target.value)}
+                                placeholder="e.g., G.O(P) No. 45/2024/WRD"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="orderDate">Order Date</Label>
+                            <Input
+                                id="orderDate"
+                                type="date"
+                                value={orderDate}
+                                onChange={(e) => setOrderDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="effectiveDate">With Effect From</Label>
+                            <Input
+                                id="effectiveDate"
+                                type="date"
+                                value={effectiveDate}
+                                onChange={(e) => setEffectiveDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="effectiveTo">With Effect To (Optional)</Label>
+                            <Input
+                                id="effectiveTo"
+                                type="date"
+                                value={effectiveTo}
+                                onChange={(e) => setEffectiveTo(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {!hideRateField && (
+                        <div className="space-y-2">
+                            <Label htmlFor="rate">Rate (₹)</Label>
+                            <Input
+                                id="rate"
+                                value={rate}
+                                onChange={(e) => setRate(e.target.value)}
+                                placeholder="e.g., 2500, 5% etc."
+                            />
+                        </div>
+                    )}
+
+                    {useStructuredData ? (
+                        <div className="space-y-8">
+                            {(!section || section === 'works') && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-md font-bold text-primary">Works Section</h3>
+                                        <Button type="button" variant="outline" size="sm" onClick={handleAddWorksRow}>
+                                            <PlusCircle className="h-4 w-4 mr-2" /> Add Row
+                                        </Button>
+                                    </div>
+                                    <div className="border rounded-md">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-muted/50 border-b">
+                                                    <th className="p-2 text-left">Description/Range</th>
+                                                    <th className="p-2 text-left w-1/3">Rate (₹)</th>
+                                                    <th className="p-2 w-12"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {worksRows.map((row, idx) => (
+                                                    <tr key={idx} className="border-b last:border-0">
+                                                        <td className="p-2">
+                                                            <Input 
+                                                                value={row.label} 
+                                                                onChange={(e) => handleWorksRowChange(idx, 'label', e.target.value)}
+                                                                className="h-8"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <Input 
+                                                                value={row.rate} 
+                                                                onChange={(e) => handleWorksRowChange(idx, 'rate', e.target.value)}
+                                                                className="h-8"
+                                                                placeholder="Amount or %"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveWorksRow(idx)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(!section || section === 'purchase') && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-md font-bold text-primary">Purchase Section</h3>
+                                        <Button type="button" variant="outline" size="sm" onClick={handleAddPurchaseRow}>
+                                            <PlusCircle className="h-4 w-4 mr-2" /> Add Row
+                                        </Button>
+                                    </div>
+                                    <div className="border rounded-md">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-muted/50 border-b">
+                                                    <th className="p-2 text-left">Description/Range</th>
+                                                    <th className="p-2 text-left w-1/3">Rate (₹)</th>
+                                                    <th className="p-2 w-12"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {purchaseRows.map((row, idx) => (
+                                                    <tr key={idx} className="border-b last:border-0">
+                                                        <td className="p-2">
+                                                            <Input 
+                                                                value={row.label} 
+                                                                onChange={(e) => handlePurchaseRowChange(idx, 'label', e.target.value)}
+                                                                className="h-8"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <Input 
+                                                                value={row.rate} 
+                                                                onChange={(e) => handlePurchaseRowChange(idx, 'rate', e.target.value)}
+                                                                className="h-8"
+                                                                placeholder="Amount or %"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemovePurchaseRow(idx)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                                id="description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={8}
+                                placeholder="Enter the detailed description of the rate application..."
+                            />
+                        </div>
+                    )}
                 </div>
                 <DialogFooter className="p-6 pt-4">
                     <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                        Save Description
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Update Rate & Save
                     </Button>
                 </DialogFooter>
             </DialogContent>

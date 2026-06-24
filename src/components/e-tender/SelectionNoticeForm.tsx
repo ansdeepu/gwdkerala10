@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Save, X, Info } from 'lucide-react';
 import { SelectionNoticeDetailsSchema, type E_tenderFormData, type SelectionNoticeDetailsFormData } from '@/lib/schemas/eTenderSchema';
-import { formatDateForInput } from './utils';
+import { formatDateForInput, toDateOrNull, getRateDetailForDate } from './utils';
 import { useDataStore, defaultRateDescriptions } from '@/hooks/use-data-store';
 import { useTenderData } from './TenderDataContext';
 import { cn } from '@/lib/utils';
@@ -65,20 +65,34 @@ const parseAdditionalPerformanceGuaranteeLogic = (description: string) => {
 
 export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, l1Amount, hasRejectedBids }: SelectionNoticeFormProps) {
     const { tender } = useTenderData();
-    const { allRateDescriptions } = useDataStore();
+    const { allRateDescriptionDetails } = useDataStore();
     const isNewTender = tender?.id === 'new';
 
+    const tenderDate = toDateOrNull(tender?.tenderDate);
+
+    const stampPaperDetail = useMemo(() => {
+        return getRateDetailForDate(allRateDescriptionDetails, 'stampPaper', tenderDate);
+    }, [allRateDescriptionDetails, tenderDate]);
+
+    const performanceGuaranteeDetail = useMemo(() => {
+        return getRateDetailForDate(allRateDescriptionDetails, 'performanceGuarantee', tenderDate);
+    }, [allRateDescriptionDetails, tenderDate]);
+
+    const additionalPerformanceGuaranteeDetail = useMemo(() => {
+        return getRateDetailForDate(allRateDescriptionDetails, 'additionalPerformanceGuarantee', tenderDate);
+    }, [allRateDescriptionDetails, tenderDate]);
+
     const stampPaperDescription = useMemo(() => {
-        return tender?.stampPaperDescription || allRateDescriptions.stampPaper || defaultRateDescriptions.stampPaper;
-    }, [tender?.stampPaperDescription, allRateDescriptions.stampPaper]);
+        return tender?.stampPaperDescription || stampPaperDetail?.description || defaultRateDescriptions.stampPaper;
+    }, [tender?.stampPaperDescription, stampPaperDetail]);
     
     const performanceGuaranteeDescription = useMemo(() => {
-        return tender?.performanceGuaranteeDescription || allRateDescriptions.performanceGuarantee || defaultRateDescriptions.performanceGuarantee;
-    }, [tender?.performanceGuaranteeDescription, allRateDescriptions.performanceGuarantee]);
+        return tender?.performanceGuaranteeDescription || performanceGuaranteeDetail?.description || defaultRateDescriptions.performanceGuarantee;
+    }, [tender?.performanceGuaranteeDescription, performanceGuaranteeDetail]);
     
     const additionalPerformanceGuaranteeDescription = useMemo(() => {
-        return tender?.additionalPerformanceGuaranteeDescription || allRateDescriptions.additionalPerformanceGuarantee || defaultRateDescriptions.additionalPerformanceGuarantee;
-    }, [tender?.additionalPerformanceGuaranteeDescription, allRateDescriptions.additionalPerformanceGuarantee]);
+        return tender?.additionalPerformanceGuaranteeDescription || additionalPerformanceGuaranteeDetail?.description || defaultRateDescriptions.additionalPerformanceGuarantee;
+    }, [tender?.additionalPerformanceGuaranteeDescription, additionalPerformanceGuaranteeDetail]);
 
     const calculateStampPaperValue = useCallback((amount?: number): number => {
         const logic = parseStampPaperLogic(stampPaperDescription);
@@ -127,7 +141,11 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
             setValue('agreedAmount', undefined);
         }
 
-        const pg = contractAmount ? Math.ceil((contractAmount * 0.05) / 100) * 100 : 0;
+        // Performance Guarantee logic extraction
+        const pgRateMatch = performanceGuaranteeDescription.match(/(\d+)%/);
+        const pgRate = pgRateMatch ? parseInt(pgRateMatch[1], 10) / 100 : 0.05;
+
+        const pg = contractAmount ? Math.ceil((contractAmount * pgRate) / 100) * 100 : 0;
         const stamp = calculateStampPaperValue(contractAmount);
         const additionalPg = calculateAdditionalPG(tender?.estimateAmount ?? undefined, contractAmount);
 
@@ -139,7 +157,7 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
         setValue('additionalPerformanceGuaranteeAmount', additionalPg, { shouldValidate: true, shouldDirty: true });
         setValue('stampPaperAmount', stamp, { shouldValidate: true, shouldDirty: true });
 
-    }, [tender.estimateAmount, tender.selectionNoticeDate, l1Amount, hasRejectedBids, calculateStampPaperValue, calculateAdditionalPG, setValue, getValues]);
+    }, [tender.estimateAmount, tender.selectionNoticeDate, l1Amount, hasRejectedBids, calculateStampPaperValue, calculateAdditionalPG, performanceGuaranteeDescription, setValue, getValues]);
 
 
     const handleFormSubmit = (data: SelectionNoticeDetailsFormData) => {

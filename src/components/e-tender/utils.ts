@@ -1,6 +1,124 @@
 // src/components/e-tender/utils.ts
 import { format, isValid, parseISO, parse } from 'date-fns';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
+import type { RateDescriptionDetail, RateDescriptionId } from '@/hooks/use-data-store';
+
+export const getRateDetailForDate = (
+    allRateDescriptionDetails: Record<RateDescriptionId, RateDescriptionDetail>,
+    id: RateDescriptionId,
+    date: Date | null
+): RateDescriptionDetail | null => {
+    const detail = allRateDescriptionDetails[id];
+    if (!detail) return null;
+    if (!date) return detail;
+    
+    const targetTime = date.getTime();
+
+    // Check history first
+    if (detail.history && detail.history.length > 0) {
+        // Sort history by effectiveDate descending to check most recent applicable first
+        const sortedHistory = [...detail.history].sort((a, b) => b.effectiveDate.getTime() - a.effectiveDate.getTime());
+        
+        for (const item of sortedHistory) {
+            const from = item.effectiveDate.getTime();
+            const to = item.effectiveTo ? item.effectiveTo.getTime() : Infinity;
+            
+            if (targetTime >= from && targetTime <= to) {
+                return {
+                    description: item.description,
+                    rate: item.rate,
+                    orderNo: item.orderNo,
+                    orderDate: item.orderDate,
+                    effectiveDate: item.effectiveDate,
+                    effectiveTo: item.effectiveTo,
+                    structuredData: item.structuredData
+                };
+            }
+        }
+    }
+
+    // Check the current entry
+    const currentFrom = detail.effectiveDate ? detail.effectiveDate.getTime() : 0;
+    const currentTo = detail.effectiveTo ? detail.effectiveTo.getTime() : Infinity;
+    if (targetTime >= currentFrom && targetTime <= currentTo) {
+        return detail;
+    }
+
+    // Fallback to the current entry if no historical match and it seems "latest"
+    return detail;
+};
+
+export const parseAmountRange = (label: string): { min: number, max: number } => {
+    const clean = label.toLowerCase().replace(/,/g, '').replace(/rs\.?/g, '').replace(/₹/g, '').trim();
+    
+    let min = 0;
+    let max = Infinity;
+
+    const lakhMatch = clean.match(/(\d+(?:\.\d+)?)\s*lakh/);
+    const croreMatch = clean.match(/(\d+(?:\.\d+)?)\s*crore/);
+    
+    const convertValue = (val: string, labelText: string) => {
+        let n = parseFloat(val);
+        if (labelText.includes('crore')) n *= 10000000;
+        else if (labelText.includes('lakh')) n *= 100000;
+        return n;
+    };
+
+    // Extract all numbers with their units
+    const parts = clean.split(/[-–]|upto|to|through/);
+    
+    if (parts.length === 2) {
+        // Range format: "Above 50000 - upto 10 Lakh" or "1 Lakh to 10 Lakh"
+        const p1 = parts[0].trim();
+        const p2 = parts[1].trim();
+        
+        const n1Match = p1.match(/(\d+(?:\.\d+)?)/);
+        if (n1Match) min = convertValue(n1Match[1], p1);
+        
+        const n2Match = p2.match(/(\d+(?:\.\d+)?)/);
+        if (n2Match) max = convertValue(n2Match[1], p2);
+    } else {
+        // Single bound format: "Above 10 crore" or "Upto 50000"
+        const nMatch = clean.match(/(\d+(?:\.\d+)?)/);
+        if (nMatch) {
+            const val = convertValue(nMatch[1], clean);
+            if (clean.includes('above') || clean.includes('over') || clean.includes('more than')) {
+                min = val;
+            } else if (clean.includes('upto') || clean.includes('up to') || clean.includes('less than') || clean.includes('below')) {
+                max = val;
+            }
+        }
+    }
+
+    return { min, max };
+};
+
+export const calculateStructuredRate = (
+    structuredData: any, 
+    tenderType: 'Work' | 'Purchase', 
+    amount: number
+): number | string => {
+    if (!structuredData) return 0;
+    const section = tenderType === 'Work' ? structuredData.works : structuredData.purchase;
+    if (!section || !Array.isArray(section)) return 0;
+
+    for (const row of section) {
+        const { min, max } = parseAmountRange(row.label);
+        if (amount > min && amount <= max) {
+            // Found the range
+            const rateStr = row.rate || "";
+            // Try to parse as number
+            const numRate = parseFloat(rateStr.replace(/[^0-9.]/g, ''));
+            if (rateStr.includes('%')) {
+                return (amount * numRate) / 100;
+            }
+            if (!isNaN(numRate)) return numRate;
+            return rateStr; // Return string if it's not just a number (e.g. "No Fee")
+        }
+    }
+
+    return 0;
+};
 
 export const formatDateForInput = (date: any, isDateTime: boolean = false): string => {
     if (!date) return '';
