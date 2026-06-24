@@ -806,9 +806,11 @@ export default function ETenderListPage() {
         const uniqueReceipt = getUniqueReceipt(receiptHistory);
         const uniqueOpening = getUniqueOpening(openingHistory);
 
+        const lastOpeningItem = uniqueOpening.length > 0 ? uniqueOpening[uniqueOpening.length - 1] : null;
+
         return { 
-            activeReceipt: uniqueReceipt[uniqueReceipt.length - 1], 
-            activeOpening: uniqueOpening[uniqueOpening.length - 1].value, 
+            activeReceipt: uniqueReceipt.length > 0 ? uniqueReceipt[uniqueReceipt.length - 1] : originalReceipt, 
+            activeOpening: lastOpeningItem ? lastOpeningItem.value : originalOpening, 
             receiptHistory: uniqueReceipt, 
             openingHistory: uniqueOpening 
         };
