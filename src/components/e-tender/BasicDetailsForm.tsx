@@ -144,7 +144,14 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
     ]);
 
     const calculateFees = useCallback(() => {
-        const amount = estimateAmount || 0;
+        const amount = (isNaN(estimateAmount) || !estimateAmount) ? 0 : estimateAmount;
+
+        if (amount === 0) {
+            setValue('tenderFormFee', 0, { shouldValidate: true, shouldDirty: true });
+            setValue('emd', 0, { shouldValidate: true, shouldDirty: true });
+            return;
+        }
+
         const tDate = toDateOrNull(tenderDate);
         let fee: number | string = 0;
         let emd: number | string = 0;
@@ -156,9 +163,8 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
 
         if (feeDetail?.structuredData) {
             fee = calculateStructuredRate(feeDetail.structuredData, tenderType || 'Work', amount);
-        } else {
-            // Fallback to legacy logic if no structured data
-            if (tenderType === 'Work') {
+            // If structured rate returns 0, but it's "Work" type, use legacy fallback as safety
+            if (fee === 0 && tenderType === 'Work' && amount > 0) {
                 if (amount <= 50000) fee = 300;
                 else if (amount <= 1000000) fee = Math.max(500, Math.min(amount * 0.002, 2000));
                 else if (amount <= 10000000) fee = 2500;
@@ -166,7 +172,15 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
                 else if (amount <= 50000000) fee = 7500;
                 else if (amount <= 100000000) fee = 10000;
                 else fee = 15000;
-            } else if (tenderType === 'Purchase') {
+            }
+        } else {
+            // Fallback to legacy logic if no structured data
+            if (tenderType === 'Work' && amount > 0) {
+                if (amount <= 50000) fee = 300;
+                else if (amount <= 1000000) fee = Math.max(500, Math.min(amount * 0.002, 2000));
+                else if (amount <= 10000000) fee = Math.max(2500, Math.min(amount * 0.002, 25000));
+                else fee = Math.max(15000, Math.min(amount * 0.002, 25000));
+            } else if (tenderType === 'Purchase' && amount > 0) {
                 if (amount <= 100000) fee = 0;
                 else if (amount <= 1000000) fee = Math.max(400, Math.min(amount * 0.002, 1500));
                 else fee = Math.min(amount * 0.0015, 25000);
@@ -181,7 +195,8 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
             emd = calculateStructuredRate(emdDetail.structuredData, tenderType || 'Work', amount);
         } else {
             // Fallback to legacy logic if no structured data
-            if (tenderType === 'Work') {
+            if ((tenderType || 'Work') === 'Work') {
+                // Common GWD/PWD standard: 2.5% of PAC subject to a maximum of 50,000 for works up to 2 crore
                 if (amount <= 20000000) emd = Math.min(amount * 0.025, 50000);
                 else if (amount <= 50000000) emd = 100000;
                 else if (amount <= 100000000) emd = 200000;
@@ -252,22 +267,22 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                <FormField name="periodOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Period of Completion (Days)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)}/></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="periodOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Period of Completion (Days)</FormLabel><FormControl><Input type="number" {...field} value={(field.value === undefined || field.value === null || isNaN(field.value)) ? '' : field.value} onChange={e => field.onChange(e.target.valueAsNumber)}/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FormField name="estimateAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender Amount (Rs.)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="estimateAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender Amount (Rs.)</FormLabel><FormControl><Input type="number" {...field} value={(field.value === undefined || field.value === null || isNaN(field.value)) ? '' : field.value} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="tenderFormFee" control={control} render={({ field }) => ( 
                                     <FormItem>
                                         <FormLabel>Tender Fee (Rs.)</FormLabel>
-                                        <FormControl><Input readOnly type="number" {...field} value={field.value ?? ''} className="bg-muted/50 font-semibold" /></FormControl>
-                                        <FormDescription className="text-xs">{`Auto-calculated. Includes GST for 'Purchase' type.`}</FormDescription>
+                                        <FormControl><Input readOnly type="number" {...field} value={(field.value === undefined || field.value === null || isNaN(field.value)) ? '' : field.value} className="bg-muted/50 font-semibold" /></FormControl>
+                                        <FormDescription className="text-xs">Auto-calculated and rounded up.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
                                 <FormField name="emd" control={control} render={({ field }) => ( 
                                     <FormItem>
                                         <FormLabel>EMD (Rs.)</FormLabel>
-                                        <FormControl><Input readOnly type="number" {...field} value={field.value ?? ''} className="bg-muted/50 font-semibold" /></FormControl>
+                                        <FormControl><Input readOnly type="number" {...field} value={(field.value === undefined || field.value === null || isNaN(field.value)) ? '' : field.value} className="bg-muted/50 font-semibold" /></FormControl>
                                         <FormDescription className="text-xs">Auto-calculated and rounded up.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 

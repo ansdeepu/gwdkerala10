@@ -54,23 +54,20 @@ export const parseAmountRange = (label: string): { min: number, max: number } =>
     let min = 0;
     let max = Infinity;
 
-    const lakhMatch = clean.match(/(\d+(?:\.\d+)?)\s*lakh/);
-    const croreMatch = clean.match(/(\d+(?:\.\d+)?)\s*crore/);
-    
     const convertValue = (val: string, labelText: string) => {
         let n = parseFloat(val);
-        if (labelText.includes('crore')) n *= 10000000;
-        else if (labelText.includes('lakh')) n *= 100000;
+        if (labelText.includes('crore') || labelText.includes('cr')) n *= 10000000;
+        else if (labelText.includes('lakh') || labelText.includes('lac') || labelText.includes(' l')) n *= 100000;
         return n;
     };
 
     // Extract all numbers with their units
-    const parts = clean.split(/[-–]|upto|to|through/);
+    const parts = clean.split(/[-–]|upto|up to|to|through/);
     
-    if (parts.length === 2) {
+    if (parts.length >= 2) {
         // Range format: "Above 50000 - upto 10 Lakh" or "1 Lakh to 10 Lakh"
         const p1 = parts[0].trim();
-        const p2 = parts[1].trim();
+        const p2 = parts[parts.length - 1].trim(); // Use last part for max
         
         const n1Match = p1.match(/(\d+(?:\.\d+)?)/);
         if (n1Match) min = convertValue(n1Match[1], p1);
@@ -82,7 +79,7 @@ export const parseAmountRange = (label: string): { min: number, max: number } =>
         const nMatch = clean.match(/(\d+(?:\.\d+)?)/);
         if (nMatch) {
             const val = convertValue(nMatch[1], clean);
-            if (clean.includes('above') || clean.includes('over') || clean.includes('more than')) {
+            if (clean.includes('above') || clean.includes('over') || clean.includes('more than') || clean.includes('greater than')) {
                 min = val;
             } else if (clean.includes('upto') || clean.includes('up to') || clean.includes('less than') || clean.includes('below')) {
                 max = val;
@@ -98,22 +95,69 @@ export const calculateStructuredRate = (
     tenderType: 'Work' | 'Purchase', 
     amount: number
 ): number | string => {
-    if (!structuredData) return 0;
-    const section = tenderType === 'Work' ? structuredData.works : structuredData.purchase;
+    if (!structuredData || amount === 0) return 0;
+    
+    // Support both lowercase and uppercase keys for resilience
+    const section = tenderType === 'Work' 
+        ? (structuredData.works || structuredData.Works || structuredData.WORKS) 
+        : (structuredData.purchase || structuredData.Purchase || structuredData.PURCHASE);
+        
     if (!section || !Array.isArray(section)) return 0;
 
     for (const row of section) {
         const { min, max } = parseAmountRange(row.label);
-        if (amount > min && amount <= max) {
-            // Found the range
-            const rateStr = row.rate || "";
-            // Try to parse as number
-            const numRate = parseFloat(rateStr.replace(/[^0-9.]/g, ''));
-            if (rateStr.includes('%')) {
-                return (amount * numRate) / 100;
+        // Use inclusive logic for boundaries to avoid gaps
+        if (amount >= min && amount <= max) {
+            const rateStr = String(row.rate || "").trim();
+            const cleanRate = rateStr.toLowerCase();
+            if (cleanRate === "no fee" || cleanRate === "nil" || cleanRate === "0") return 0;
+            
+            // Handle percentage with min/max constraints
+            // Examples: 
+            // "0.2% of cost of work (subject to a minimum of Rs.500 and maximum of Rs.2000)"
+            // "1% (Min. Rs. 1000)"
+            const pctMatch = rateStr.match(/([\d,]+(?:\.\d+)?)\s*%/);
+            if (pctMatch) {
+                const pct = parseFloat(pctMatch[1].replace(/,/g, ''));
+                let fee = (amount * pct) / 100;
+                
+                // Extract minimum if exists
+                // Patterns: "min 500", "minimum of 500", "min: 500", "min. 500"
+                const minMatch = cleanRate.match(/min(?:imum)?[:.]?\s*(?:of)?\s*(?:rs\.?)?\s*([\d,]+(?:\.\d+)?)/);
+                if (minMatch) {
+                    let minVal = parseFloat(minMatch[1].replace(/,/g, ''));
+                    // Check for Lakh/Crore in minimum value
+                    const minIndex = cleanRate.indexOf(minMatch[0]);
+                    const minPart = cleanRate.substring(minIndex);
+                    if (minPart.includes('lakh') || minPart.includes('lac')) minVal *= 100000;
+                    else if (minPart.includes('crore') || minPart.includes('cr')) minVal *= 10000000;
+                    
+                    if (fee < minVal) fee = minVal;
+                }
+                
+                // Extract maximum if exists
+                const maxMatch = cleanRate.match(/max(?:imum)?[:.]?\s*(?:of)?\s*(?:rs\.?)?\s*([\d,]+(?:\.\d+)?)/);
+                if (maxMatch) {
+                    let maxVal = parseFloat(maxMatch[1].replace(/,/g, ''));
+                    const maxIndex = cleanRate.indexOf(maxMatch[0]);
+                    const maxPart = cleanRate.substring(maxIndex);
+                    if (maxPart.includes('lakh') || maxPart.includes('lac')) maxVal *= 100000;
+                    else if (maxPart.includes('crore') || maxPart.includes('cr')) maxVal *= 10000000;
+                    
+                    if (fee > maxVal) fee = maxVal;
+                }
+                
+                return fee;
             }
-            if (!isNaN(numRate)) return numRate;
-            return rateStr; // Return string if it's not just a number (e.g. "No Fee")
+
+            // Simple number parsing (fallback)
+            // Only use this if it doesn't look like it has complex constraints we might misparse
+            if (!rateStr.includes('min') && !rateStr.includes('max')) {
+                const numRate = parseFloat(rateStr.replace(/[^0-9.]/g, ''));
+                if (!isNaN(numRate)) return numRate;
+            }
+
+            return rateStr; // Return string if it's complex or has no percentage
         }
     }
 
