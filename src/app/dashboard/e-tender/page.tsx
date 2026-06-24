@@ -1755,7 +1755,9 @@ export default function ETenderListPage() {
                           "Name of Work",
                           "Work Order Date",
                           "Performance Guarantee Amount Submitted (₹)",
-                          "Additional Performance Guarantee Amount Submitted (₹)"
+                          "Performance Guarantee Status",
+                          "Additional Performance Guarantee Amount Submitted (₹)",
+                          "Additional Performance Guarantee Status"
                         ];
                         
                         const headerRow = worksheet.addRow(headers);
@@ -1766,13 +1768,26 @@ export default function ETenderListPage() {
                         });
                         
                         detailedGuaranteesContent.tenders.forEach((t, i) => {
+                          const pg = t.performanceGuaranteeAmountSubmitted;
+                          const apg = t.additionalPerformanceGuaranteeAmountSubmitted;
+                          
+                          const pgStatus = pg !== null && pg !== undefined 
+                            ? (t.performanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld')
+                            : 'N/A';
+                          
+                          const apgStatus = apg !== null && apg !== undefined 
+                            ? (t.additionalPerformanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld')
+                            : 'N/A';
+
                           const row = worksheet.addRow([
                             i + 1,
                             t.eTenderNo || "N/A",
                             t.nameOfWork || "N/A",
                             formatDateSafe(t.dateWorkOrder),
-                            t.performanceGuaranteeAmountSubmitted !== null && t.performanceGuaranteeAmountSubmitted !== undefined ? t.performanceGuaranteeAmountSubmitted : 0,
-                            t.additionalPerformanceGuaranteeAmountSubmitted !== null && t.additionalPerformanceGuaranteeAmountSubmitted !== undefined ? t.additionalPerformanceGuaranteeAmountSubmitted : 0
+                            pg !== null && pg !== undefined ? pg : 0,
+                            pgStatus,
+                            apg !== null && apg !== undefined ? apg : 0,
+                            apgStatus
                           ]);
                           row.eachCell(cell => {
                             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
@@ -1841,7 +1856,7 @@ export default function ETenderListPage() {
                                     <span>{pg !== null && pg !== undefined ? `₹${pg.toLocaleString('en-IN')}` : 'Nil'}</span>
                                     {pg !== null && pg !== undefined && (
                                       <Badge variant="outline" className={cn(
-                                        "text-[9px] px-1 h-3.5",
+                                        "text-[9px] px-1.5 py-0.5 h-auto whitespace-nowrap",
                                         t.performanceGuaranteeReleaseStatus === 'Released' ? "border-green-500 text-green-700 bg-green-50" : "border-amber-500 text-amber-700 bg-amber-50"
                                       )}>
                                         {t.performanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld'}
@@ -1854,7 +1869,7 @@ export default function ETenderListPage() {
                                     <span>{apg !== null && apg !== undefined ? `₹${apg.toLocaleString('en-IN')}` : 'Nil'}</span>
                                     {apg !== null && apg !== undefined && (
                                       <Badge variant="outline" className={cn(
-                                        "text-[9px] px-1 h-3.5",
+                                        "text-[9px] px-1.5 py-0.5 h-auto whitespace-nowrap",
                                         t.additionalPerformanceGuaranteeReleaseStatus === 'Released' ? "border-green-500 text-green-700 bg-green-50" : "border-amber-500 text-amber-700 bg-amber-50"
                                       )}>
                                         {t.additionalPerformanceGuaranteeReleaseStatus === 'Released' ? 'Released to Bidder' : 'Withheld'}

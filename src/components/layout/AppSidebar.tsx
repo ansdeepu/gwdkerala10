@@ -71,12 +71,12 @@ export default function AppSidebar() {
         <div className="flex items-center gap-2">
           <div className="shrink-0">
             <Image 
-              src="https://placehold.co/40x40/2563EB/FFFFFF.png?text=G" 
+              src="/gwd-logo.svg" 
               alt="GWD Logo" 
               width={32} 
               height={32} 
-              className="rounded-sm"
-              data-ai-hint="logo abstract"
+              className="object-contain"
+              referrerPolicy="no-referrer"
             />
           </div>
           <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden select-none cursor-default">

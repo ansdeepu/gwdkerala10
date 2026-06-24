@@ -50,12 +50,12 @@ export default function LoginPage() {
           {/* Left Column: Branding */}
           <div className="flex w-full flex-col items-center text-center md:w-1/2">
             <Image
-              src="https://placehold.co/120x120/2563EB/FFFFFF.png?text=GWD&font=lato&fontWeight=900&font-size=24"
+              src="/gwd-logo.svg"
               alt="GWD Logo"
               width={100}
               height={100}
-              className="mb-6 rounded-lg shadow-md"
-              data-ai-hint="abstract logo"
+              className="mb-6 object-contain"
+              referrerPolicy="no-referrer"
               priority
             />
             <h1 className="mb-3 text-3xl font-bold tracking-tight text-primary md:text-4xl">
