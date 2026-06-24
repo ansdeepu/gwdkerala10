@@ -106,12 +106,12 @@ export default function ETenderNoticeBoard() {
     const uniqueReceipt = getUniqueReceipt(receiptHistory);
     const uniqueOpening = getUniqueOpening(openingHistory);
 
-    const lastOpeningItem = uniqueOpening[uniqueOpening.length - 1];
+    const lastOpeningItem = uniqueOpening.length > 0 ? uniqueOpening[uniqueOpening.length - 1] : null;
 
     return { 
-        activeReceipt: uniqueReceipt[uniqueReceipt.length - 1], 
-        activeOpening: lastOpeningItem.value, 
-        activeOpeningSource: lastOpeningItem.source,
+        activeReceipt: uniqueReceipt.length > 0 ? uniqueReceipt[uniqueReceipt.length - 1] : originalReceipt, 
+        activeOpening: lastOpeningItem ? lastOpeningItem.value : originalOpening, 
+        activeOpeningSource: lastOpeningItem ? lastOpeningItem.source : undefined,
     };
   }, []);
 
