@@ -153,7 +153,11 @@ export function useAuth() {
             updateUserLastActive(userProfile.uid, userProfile.officeLocation);
             setAuthState({ isAuthenticated: true, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser });
         } else {
-             if (auth.currentUser) {
+             // Only sign out if we explicitly found a profile that is NOT approved.
+             // Avoid signing out if the profile is just null (could be transient or first-load sync issue)
+             // to prevent cross-tab sign-out loops.
+             if (auth.currentUser && userProfile && !userProfile.isApproved) {
+                console.warn('[Auth] User is not approved. Signing out.');
                 try { await signOut(auth); } catch (signOutError) {}
             }
             setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser: null });
