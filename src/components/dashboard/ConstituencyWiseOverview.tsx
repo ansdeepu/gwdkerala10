@@ -90,6 +90,14 @@ const getColorClass = (name: string): string => {
 
 export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, collectorWorksCount, planFundWorksCount, arsWorksCount, totalCompletedCount, onOpenDialog, dates, onSetDates }: ConstituencyWiseOverviewProps) {
 
+  const sortedConstituencies = useMemo(() => {
+    const fromWorks = allWorks
+      .map(w => w.constituency)
+      .filter((c): c is string => typeof c === 'string' && c.trim() !== '');
+    const set = new Set([...constituencyOptions, ...fromWorks]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allWorks]);
+
   const { summaryData, totalCategorizedWorks } = React.useMemo(() => {
     const sDate = dates.start ? startOfDay(dates.start) : null;
     const eDate = dates.end ? endOfDay(dates.end) : null;
@@ -111,7 +119,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
       ...acc, [purpose]: { count: 0, completedCount: 0, data: [], expenditure: 0 }
     }), {} as Record<string, { count: number; completedCount: number; data: any[]; expenditure: number }>);
 
-    const constituencyData = constituencyOptions.reduce((acc, constituency) => ({
+    const constituencyData = sortedConstituencies.reduce((acc, constituency) => ({
       ...acc,
       [constituency]: {
         totalCount: 0,
@@ -121,12 +129,12 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
         completedWorks: [] as any[],
         byPurpose: initialCounts(),
       }
-    }), {} as Record<Constituency, { totalCount: number, totalExpenditure: number, completedCount: number, allWorks: any[], completedWorks: any[], byPurpose: ReturnType<typeof initialCounts> }>);
+    }), {} as Record<string, { totalCount: number, totalExpenditure: number, completedCount: number, allWorks: any[], completedWorks: any[], byPurpose: ReturnType<typeof initialCounts> }>);
     
     let totalCategorizedWorks = 0;
 
     filteredWorks.forEach(work => {
-        const constituency = work.constituency as Constituency | undefined;
+        const constituency = work.constituency as string | undefined;
         let purpose = (work.purpose || 'N/A') as string;
         const isCompleted = work.workStatus && FINAL_WORK_STATUSES.includes(work.workStatus);
         
@@ -134,7 +142,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
             purpose = "ARS";
         }
         
-        if (constituency && constituencyOptions.includes(constituency)) {
+        if (constituency && sortedConstituencies.includes(constituency)) {
           const currentData = constituencyData[constituency];
           const expenditure = Number(work.totalExpenditure) || 0;
           
@@ -162,7 +170,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
     });
 
     return { summaryData: { constituencyData, displayPurposes: allDisplayPurposes }, totalCategorizedWorks };
-  }, [allWorks, dates]);
+  }, [allWorks, dates, sortedConstituencies]);
 
   const handleCellClick = (data: any[], title: string) => {
     const columns = [
@@ -187,10 +195,6 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
 
     onOpenDialog(dialogData, title, columns, 'detail');
   };
-  
-  const sortedConstituencies = useMemo(() => {
-      return [...constituencyOptions].sort((a,b) => a.localeCompare(b));
-  }, []);
   
   return (
     <Card>

@@ -213,6 +213,23 @@ export default function ReportsPage() {
 
   const uniqueApplicationTypeOptions = useMemo(() => [...new Set(applicationTypeOptions)], []);
 
+  const dynamicConstituencies = useMemo(() => {
+    const set = new Set<string>();
+    allFileEntries?.forEach(entry => {
+      if (entry.constituency) set.add(entry.constituency);
+      entry.siteDetails?.forEach(site => {
+        if (site.constituency) set.add(site.constituency);
+      });
+    });
+    allArsEntries?.forEach(entry => {
+      if (entry.constituency) set.add(entry.constituency);
+    });
+    // Add baseline
+    constituencyOptions.forEach(c => set.add(c));
+    return Array.from(set).filter(Boolean).sort();
+  }, [allFileEntries, allArsEntries]);
+
+
   const matchesDataSource = useCallback((entry: DataEntryFormData, source: DataSource): boolean => {
     if (source === 'all') return true;
     
@@ -659,7 +676,7 @@ export default function ReportsPage() {
                         <SelectTrigger className="h-9"><SelectValue placeholder="Filter Constituency" /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             <SelectItem value="all">All Constituencies</SelectItem>
-                            {[...constituencyOptions].sort().map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            {[...dynamicConstituencies].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

@@ -252,7 +252,7 @@ export type ApplicationType = typeof applicationTypeOptions[number];
 export const applicationTypeDisplayMap = Object.fromEntries(applicationTypeOptions.map(option => [option, option.replace(/_/g, " ")])) as Record<ApplicationType, string>;
 
 export const constituencyOptions = ["Chadayamangalam", "Chathannoor", "Chavara", "Eravipuram", "Kollam", "Kottarakkara", "Kundara", "Kunnathur", "Karunagappally", "Pathanapuram", "Punalur"] as const;
-export type Constituency = typeof constituencyOptions[number];
+export type Constituency = string;
 
 export const remittedAccountOptions = ["Bank", "STSB", "Revenue Head", "Plan Fund"] as const;
 export type RemittedAccount = typeof remittedAccountOptions[number];
@@ -407,7 +407,7 @@ export const ArsEntrySchema = z.object({
   fileNo: z.string().min(1, 'File No is required.'),
   nameOfSite: z.string().min(1, 'Name of Site is required.'),
   localSelfGovt: z.string().min(1, "Local Self Govt. is required."),
-  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.string().optional().nullable()),
   arsBlock: optionalStringSchema,
   latitude: optionalNumber(),
   longitude: optionalNumber(),
@@ -447,7 +447,7 @@ export const SiteDetailSchema = z.object({
   id: z.string().optional(),
   nameOfSite: z.string().min(1, "Name of Site is required."),
   localSelfGovt: z.string().min(1, "Local Self Govt. is required."),
-  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.string().optional().nullable()),
   latitude: optionalNumber(),
   longitude: optionalNumber(),
   purpose: z.string().min(1, "Purpose is required."),
@@ -566,7 +566,7 @@ export const DataEntrySchema = z.object({
   secondaryMobileNo: z.string().optional().nullable(),
   category: z.enum(['Govt', 'Private', 'Complaints']).optional().nullable(),
   applicationType: z.enum(applicationTypeOptions).optional().nullable(),
-  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.string().optional().nullable()),
   estimateAmount: optionalNumber(),
   assignedSupervisorUids: z.array(z.string()).optional(),
   officeLocation: z.string().optional().nullable(),
