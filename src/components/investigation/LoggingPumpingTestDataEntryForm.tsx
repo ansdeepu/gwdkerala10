@@ -239,8 +239,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     }, [filteredAppTypeOptions, data.applicationType]);
 
     const handleChange = (key: string, value: any) => {
-        setData((prev: any) => ({ ...prev, [key]: value }));
-        if (value && String(value).trim()) {
+        let finalValue = value;
+        if (key === 'fileNo' && typeof value === 'string') {
+            finalValue = value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+        }
+        setData((prev: any) => ({ ...prev, [key]: finalValue }));
+        if (finalValue && String(finalValue).trim()) {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete (newErrors as any)[key];
@@ -253,8 +257,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     };
     
     const handleSave = async () => {
+        const fileNoCleaned = data.fileNo ? String(data.fileNo).replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '').trim() : '';
         const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; category?: string; } = {};
-        if (!data.fileNo?.trim()) {
+        if (!fileNoCleaned) {
             newErrors.fileNo = "File No is required.";
         }
         if (!data.applicantName?.trim()) {
@@ -272,10 +277,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             return;
         }
 
-        if (!isEditing && user?.officeLocation && data.fileNo) {
+        const finalData = { ...data, fileNo: fileNoCleaned };
+
+        if (!isEditing && user?.officeLocation && fileNoCleaned) {
             setIsChecking(true);
             try {
-                const fileNoTrimmed = data.fileNo.trim().toUpperCase();
+                const fileNoTrimmed = fileNoCleaned.toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
 
@@ -301,7 +308,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             setIsChecking(false);
         }
 
-        onConfirm(data);
+        onConfirm(finalData);
     };
 
     const categoryOptions = useMemo(() => {
@@ -320,6 +327,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
                     <Input id="fileNo" value={data.fileNo || ''} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                        Office code (e.g., GWDKLM) is not required. Enter only number/year (e.g., 1956/2023).
+                    </p>
                     {errors.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">

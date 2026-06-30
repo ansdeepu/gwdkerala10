@@ -837,6 +837,7 @@ export default function AgencyRegistrationPage() {
     try {
         const formattedData: AgencyApplication = {
             ...data,
+            fileNo: data.fileNo ? data.fileNo.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '').trim() : data.fileNo,
             agencyName: formatCase(data.agencyName) ?? data.agencyName,
             owner: {
                 ...data.owner,
@@ -1439,7 +1440,26 @@ export default function AgencyRegistrationPage() {
                     <CardContent>
                         <div className="space-y-4">
                             <div className="grid md:grid-cols-3 gap-4">
-                                <FormField name="fileNo" render={({ field }) => <FormItem><FormLabel>File No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="fileNo" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>File No.</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                value={field.value ?? ""} 
+                                                readOnly={isReadOnly} 
+                                                onChange={(e) => {
+                                                    const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                                    field.onChange(cleaned);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <p className="text-[11px] text-muted-foreground leading-snug">
+                                            Office code (e.g., GWDKLM) is not required. Enter only number/year (e.g., 1956/2023).
+                                        </p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                                 <FormField name="agencyName" render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Agency Name &amp; Address</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                             </div>
                             <Separator />

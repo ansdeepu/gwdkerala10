@@ -198,7 +198,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(queryFn(), (snapshot: QuerySnapshot<DocumentData>) => {
                 if (collectionName === 'rateDescriptions') {
-                    const descriptions: Record<RateDescriptionId, string> = {};
+                    const descriptions: Partial<Record<RateDescriptionId, string>> = {};
                     const details: Record<RateDescriptionId, RateDescriptionDetail> = {} as Record<RateDescriptionId, RateDescriptionDetail>;
 
                     snapshot.docs.forEach(doc => {

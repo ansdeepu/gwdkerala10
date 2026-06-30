@@ -144,7 +144,7 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
     ]);
 
     const calculateFees = useCallback(() => {
-        const amount = (isNaN(estimateAmount) || !estimateAmount) ? 0 : estimateAmount;
+        const amount = (typeof estimateAmount !== 'number' || isNaN(estimateAmount)) ? 0 : estimateAmount;
 
         if (amount === 0) {
             setValue('tenderFormFee', 0, { shouldValidate: true, shouldDirty: true });
@@ -220,8 +220,16 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
     }, [calculateFees]);
      
     const onFormSubmit = (data: BasicDetailsFormData) => {
+        const cleanFileNo = (val: string | null | undefined) => {
+            if (!val) return val;
+            return val.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '').trim();
+        };
         const formData: Partial<E_tenderFormData> = {
             ...data,
+            fileNo: cleanFileNo(data.fileNo),
+            fileNo2: cleanFileNo(data.fileNo2),
+            fileNo3: cleanFileNo(data.fileNo3),
+            fileNo4: cleanFileNo(data.fileNo4),
             nameOfWork: formatCase(data.nameOfWork) ?? data.nameOfWork,
             nameOfWorkMalayalam: formatCase(data.nameOfWorkMalayalam) ?? data.nameOfWorkMalayalam,
         };
@@ -243,11 +251,74 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
                                 <FormField name="tenderDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender Date</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || null)}/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <FormField name="fileNo" control={control} render={({ field }) => ( <FormItem><FormLabel>File No. 1</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="fileNo2" control={control} render={({ field }) => ( <FormItem><FormLabel>File No. 2</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="fileNo3" control={control} render={({ field }) => ( <FormItem><FormLabel>File No. 3</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="fileNo4" control={control} render={({ field }) => ( <FormItem><FormLabel>File No. 4</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="fileNo" control={control} render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>File No. 1</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                value={field.value ?? ''} 
+                                                onChange={(e) => {
+                                                    const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                                    field.onChange(cleaned);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField name="fileNo2" control={control} render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>File No. 2</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                value={field.value ?? ''} 
+                                                onChange={(e) => {
+                                                    const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                                    field.onChange(cleaned);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField name="fileNo3" control={control} render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>File No. 3</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                value={field.value ?? ''} 
+                                                onChange={(e) => {
+                                                    const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                                    field.onChange(cleaned);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField name="fileNo4" control={control} render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>File No. 4</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                {...field} 
+                                                value={field.value ?? ''} 
+                                                onChange={(e) => {
+                                                    const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                                    field.onChange(cleaned);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
                             </div>
+                            <p className="text-[11px] text-muted-foreground leading-snug -mt-2">
+                                Office code (e.g., GWDKLM) is not required. Enter only number/year (e.g., 1956/2023) for each File No.
+                            </p>
                             <div className="grid grid-cols-1 gap-4">
                                <FormField name="nameOfWork" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Work</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[60px]"/></FormControl><FormMessage /></FormItem> )}/>
                                <FormField name="nameOfWorkMalayalam" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Work (in Malayalam)</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[60px]"/></FormControl><FormMessage /></FormItem> )}/>

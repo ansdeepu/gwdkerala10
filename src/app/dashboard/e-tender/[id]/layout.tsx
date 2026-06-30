@@ -51,6 +51,10 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                     supervisor2Id: undefined, supervisor2Name: undefined, supervisor2Phone: undefined,
                     supervisor3Id: undefined, supervisor3Name: undefined, supervisor3Phone: undefined,
                     nameOfSupervisor: undefined, supervisorPhoneNo: undefined, remarks: '',
+                    isPerformanceGuaranteeSubmitted: false,
+                    performanceGuaranteeReleaseStatus: 'Withheld',
+                    isAdditionalPerformanceGuaranteeSubmitted: false,
+                    additionalPerformanceGuaranteeReleaseStatus: 'Withheld',
                 };
                 setTender(newTenderData);
             } else {

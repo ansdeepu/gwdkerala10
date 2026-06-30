@@ -235,6 +235,9 @@ export default function ArsEntryPage() {
     const onSubmit = async (data: ArsEntryFormData) => {
         setIsSubmitting(true);
         try {
+            if (data.fileNo) {
+                data.fileNo = data.fileNo.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '').trim();
+            }
             if (id && id !== 'new') {
                 if (user?.role === 'supervisor') {
                     await createArsPendingUpdate(id, data, user);
@@ -268,7 +271,26 @@ export default function ArsEntryPage() {
                 <Card>
                     <CardHeader><CardTitle>1. Site Identification</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <FormField name="fileNo" control={control} render={({ field }) => ( <FormItem><FormLabel>File No *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="fileNo" control={control} render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>File No *</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        {...field} 
+                                        value={field.value ?? ''} 
+                                        readOnly={isReadOnly} 
+                                        onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/^[a-zA-Z]{2,}[a-zA-Z\s\/\\-]*?(?=\d)/, '');
+                                            field.onChange(cleaned);
+                                        }}
+                                    />
+                                </FormControl>
+                                <p className="text-[11px] text-muted-foreground leading-snug">
+                                    Office code (e.g., GWDKLM) is not required. Enter only number/year (e.g., 1956/2023).
+                                </p>
+                                <FormMessage/>
+                            </FormItem>
+                        )}/>
                         <FormField name="nameOfSite" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Name of Site *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select key={field.value} onValueChange={field.onChange} value={field.value ?? undefined} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80">{sortedLsgMaps.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select key={field.value} onValueChange={field.onChange} value={field.value ?? undefined} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={constituencyPlaceholder}/></SelectTrigger></FormControl><SelectContent className="max-h-80">{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>

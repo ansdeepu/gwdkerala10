@@ -303,7 +303,7 @@ export default function GwdRatesPage() {
 
   const canManage = user?.role === 'superAdmin';
   
-  const [editingRate, setEditingRate] = useState<{id: RateDescriptionId, title: string} | null>(null);
+  const [editingRate, setEditingRate] = useState<{id: RateDescriptionId, title: string, section?: 'works' | 'purchase'} | null>(null);
 
   useEffect(() => {
     setHeader('GWD Rates', 'A master list of all standard items and their approved rates used by the department.');
@@ -443,9 +443,9 @@ export default function GwdRatesPage() {
                     description: currentDetail.description || '',
                     rate: currentDetail.rate || '',
                     orderNo: currentDetail.orderNo || '',
-                    orderDate: currentDetail.orderDate || null,
-                    effectiveDate: currentDetail.effectiveDate || (currentDetail.updatedAt ? (currentDetail.updatedAt instanceof Timestamp ? currentDetail.updatedAt.toDate() : new Date(currentDetail.updatedAt)) : new Date()),
-                    effectiveTo: Timestamp.fromDate(effectiveTo),
+                    orderDate: currentDetail.orderDate || undefined,
+                    effectiveDate: currentDetail.effectiveDate || new Date(),
+                    effectiveTo: effectiveTo || undefined,
                     structuredData: currentDetail.structuredData || null,
                     updatedAt: new Date(),
                 },
@@ -622,9 +622,9 @@ export default function GwdRatesPage() {
             description: currentDetail.description || '',
             rate: currentDetail.rate || '',
             orderNo: currentDetail.orderNo || '',
-            orderDate: currentDetail.orderDate || null,
+            orderDate: currentDetail.orderDate || undefined,
             effectiveDate: currentDetail.effectiveDate || new Date(),
-            effectiveTo: currentDetail.effectiveTo || null,
+            effectiveTo: currentDetail.effectiveTo || undefined,
             structuredData: currentDetail.structuredData || null,
             updatedAt: new Date(),
         };
