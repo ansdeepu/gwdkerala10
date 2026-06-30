@@ -594,7 +594,14 @@ export const DataEntrySchema = z.object({
       return;
   }
 
-  const hasRemittances = data.remittanceDetails && data.remittanceDetails.length > 0;
+  // Skip validation if the file status is in initial processing/draft stages.
+  // This prevents blocking users who register files/site estimates before payment is recorded.
+  const isInitialStage = ["File Under Process", "Under Process", "Pending"].includes(data.fileStatus);
+  if (isInitialStage) {
+      return;
+  }
+
+  const hasRemittances = (data.remittanceDetails && data.remittanceDetails.length > 0) || (data.totalRemittance && data.totalRemittance > 0);
   const hasReappCredit = data.totalReappropriationCredit && data.totalReappropriationCredit > 0;
 
   if (!hasRemittances && !hasReappCredit) {

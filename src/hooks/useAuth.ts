@@ -19,14 +19,13 @@ import {
   browserLocalPersistence,
 } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, Timestamp, query, where, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, Timestamp, query, where, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { app, auth, db } from '@/lib/firebase';
 import { type UserRole, type Designation } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast"; 
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+
 
 export interface UserProfile {
   uid: string;

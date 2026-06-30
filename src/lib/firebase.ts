@@ -1,9 +1,8 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
-// To use Analytics: import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 // These environment variables need to be set in your .env file.
 // You can find these values in your Firebase project settings.
@@ -25,20 +24,31 @@ if (!getApps().length) {
     app = getApp();
 }
 
-// Initialize Firestore
-const db: Firestore = getFirestore(app);
+// Initialize Firestore with client-side multi-tab persistence
+let db: Firestore;
+if (typeof window !== 'undefined') {
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch (error) {
+    console.warn("Failed to initialize Firestore with persistent local cache, falling back to standard:", error);
+    db = getFirestore(app);
+  }
+} else {
+  db = getFirestore(app);
+}
 
+// Initialize Auth with explicit local persistence
 const auth: Auth = getAuth(app);
-const storage: FirebaseStorage = getStorage(app);
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch(err => {
+    console.error("Firebase setPersistence error:", err);
+  });
+}
 
-// Example for Firebase Analytics (optional):
-// let analytics: Analytics | undefined;
-// if (typeof window !== 'undefined') { // Ensure it runs only on the client
-//   isSupported().then(yes => { // Check if Firebase Analytics is supported in the current environment
-//     if (yes) {
-//       analytics = getAnalytics(app);
-//     }
-//   });
-// }
+const storage: FirebaseStorage = getStorage(app);
 
 export { app, auth, db, storage /*, analytics */ };
