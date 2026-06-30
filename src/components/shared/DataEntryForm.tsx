@@ -684,7 +684,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     const completionGroup = ["Work Failed", "Work Completed", "Completed"];
     const disputeGroup = ["Work Cancelled", "Refund Pending", "To be Refunded"];
     
-    const isClosedSite = (s: any) => (s.workStatus === 'Work Completed' || s.workStatus === 'Work Failed') && (Number(s.totalExpenditure) || 0) > 0;
+    const isClosedSite = (s: any) => ((s.workStatus === 'Work Completed' || s.workStatus === 'Work Failed') && (Number(s.totalExpenditure) || 0) > 0) || s.workStatus === 'Work Cancelled';
     
     const allFinalGroup = [...completionGroup, ...disputeGroup];
     const partialIndicators = [...allFinalGroup, "Work in Progress"];
@@ -1023,7 +1023,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     let activeEstimateSum = 0;
 
     siteFields.forEach((field, index) => {
-        const isClosed = (field.workStatus === 'Work Completed' || field.workStatus === 'Work Failed') && (Number(field.totalExpenditure) || 0) > 0;
+        const isClosed = ((field.workStatus === 'Work Completed' || field.workStatus === 'Work Failed') && (Number(field.totalExpenditure) || 0) > 0) || field.workStatus === 'Work Cancelled';
         if (isClosed) {
             closed.push({ field, originalIndex: index });
         } else {
@@ -1136,7 +1136,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                         <div className="flex items-center justify-between pr-4">
                                             <div className="flex-1">
                                                 <AccordionTrigger className="text-base font-semibold px-4 group opacity-80 hover:no-underline focus-visible:outline-none">
-                                                    <div className="text-left text-red-700">
+                                                    <div className={cn("text-left", getStatusColorClass(site.field.workStatus))}>
                                                         Site #{index + 1}: {site.field.nameOfSite || "Unnamed Site"} ({site.field.purpose || 'N/A'})
                                                     </div>
                                                 </AccordionTrigger>
