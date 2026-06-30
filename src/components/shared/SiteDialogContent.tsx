@@ -307,7 +307,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField name="purpose" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
@@ -347,8 +347,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
-                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                     </div>
                                 </CardContent>
                             </Card>
