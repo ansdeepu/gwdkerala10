@@ -15,7 +15,7 @@ export default function WorkAgreementPrintPage() {
     const { officeAddress } = useDataStore();
     const [lang, setLang] = useState<'en' | 'ml'>('ml');
     const [useStampMargin, setUseStampMargin] = useState<boolean>(true);
-    const [stampMargin, setStampMargin] = useState<number>(15);
+    const [stampMargin, setStampMargin] = useState<number>(14);
     const [page1Border, setPage1Border] = useState<boolean>(false);
 
     // Style for printing to hide headers/footers
@@ -671,7 +671,7 @@ export default function WorkAgreementPrintPage() {
                                 onChange={(e) => setStampMargin(Number(e.target.value))}
                                 className="border rounded bg-white px-2 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
                             >
-                                {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((val) => (
+                                {[10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18].map((val) => (
                                     <option key={val} value={val}>{val} cm</option>
                                 ))}
                             </select>
