@@ -31,10 +31,11 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
 
         const loadTender = async () => {
             if (!id || !user) {
-                // If there's no ID or user, there's nothing to load.
-                setError("Invalid request.");
+                // If there's no ID or user yet, wait for hydration or redirect to login.
                 return;
             }
+
+            setError(null);
 
             if (id === 'new') {
                 const newTenderData: E_tender = {
