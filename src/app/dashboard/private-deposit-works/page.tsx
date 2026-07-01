@@ -180,7 +180,22 @@ export default function PrivateDepositWorksPage() {
       const tender = searchFilteredEntries.filter(e => e.fileStatus === 'Tender Process');
       const exec = searchFilteredEntries.filter(e => ["Work Initiated", "Partially Completed"].includes(e.fileStatus as string));
       const comp = searchFilteredEntries.filter(e => ["Fully Completed", "Fully Disputed", "Fully Completed Except Disputed"].includes(e.fileStatus as string));
-      const closed = searchFilteredEntries.filter(e => e.fileStatus === 'File Closed');
+      
+      const isZero = (val: any) => {
+        if (val === undefined || val === null || val === '') return true;
+        const normalized = String(val).replace(/[₹,]/g, '').trim();
+        const num = Number(normalized);
+        return !isNaN(num) && Math.abs(num) < 0.01;
+      };
+
+      const getBalance = (e: any) => {
+          if (e.overallBalance !== undefined && e.overallBalance !== null) return e.overallBalance;
+          if (e.finalDetails?.overallBalance !== undefined && e.finalDetails?.overallBalance !== null) return e.finalDetails.overallBalance;
+          return 0;
+      };
+
+      const closedPending = searchFilteredEntries.filter(e => e.fileStatus === 'File Closed' && !isZero(getBalance(e)));
+      const completelyClosed = searchFilteredEntries.filter(e => e.fileStatus === 'File Closed' && isZero(getBalance(e)));
 
       return {
           groups: {
@@ -188,14 +203,16 @@ export default function PrivateDepositWorksPage() {
               "tender-stage": tender,
               "execution": exec,
               "completed": comp,
-              "closed": closed
+              "closed-pending": closedPending,
+              "completely-closed": completelyClosed
           },
           counts: {
               pre: pre.length,
               tender: tender.length,
               exec: exec.length,
               comp: comp.length,
-              closed: closed.length
+              closedPending: closedPending.length,
+              completelyClosed: completelyClosed.length
           }
       };
   }, [searchFilteredEntries]);
@@ -269,21 +286,24 @@ export default function PrivateDepositWorksPage() {
           </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-5 h-auto p-1">
-                    <TabsTrigger value="pre-execution" className="py-2 text-xs md:text-sm">
-                        Pre-Execution <Badge variant="secondary" className="ml-2">{counts.pre}</Badge>
+                <TabsList className="flex flex-nowrap overflow-x-auto w-full h-auto p-1 bg-muted/50 justify-start no-scrollbar">
+                    <TabsTrigger value="pre-execution" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Pre-Execution <Badge variant="secondary" className="ml-1">{counts.pre || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="tender-stage" className="py-2 text-xs md:text-sm">
-                        Tender Stage <Badge variant="secondary" className="ml-2">{counts.tender}</Badge>
+                    <TabsTrigger value="tender-stage" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Tender Stage <Badge variant="secondary" className="ml-1">{counts.tender || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="execution" className="py-2 text-xs md:text-sm">
-                        Execution <Badge variant="secondary" className="ml-2">{counts.exec}</Badge>
+                    <TabsTrigger value="execution" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Execution <Badge variant="secondary" className="ml-1">{counts.exec || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="completed" className="py-2 text-xs md:text-sm">
-                        Completed <Badge variant="secondary" className="ml-2">{counts.comp}</Badge>
+                    <TabsTrigger value="completed" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Completed <Badge variant="secondary" className="ml-1">{counts.comp || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="closed" className="py-2 text-xs md:text-sm">
-                        Closed Files <Badge variant="secondary" className="ml-2">{counts.closed}</Badge>
+                    <TabsTrigger value="closed-pending" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Closed (Pending) <Badge variant="secondary" className="ml-1">{counts.closedPending || 0}</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="completely-closed" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Closed (Zero) <Badge variant="secondary" className="ml-1">{counts.completelyClosed || 0}</Badge>
                     </TabsTrigger>
                 </TabsList>
             </Tabs>

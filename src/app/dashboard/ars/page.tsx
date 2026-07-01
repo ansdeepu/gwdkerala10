@@ -668,21 +668,21 @@ export default function ArsPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full pt-4">
-                <TabsList className="grid w-full grid-cols-5 h-auto p-1">
-                    <TabsTrigger value="pre-execution" className="py-2 text-xs md:text-sm">
-                        Pre-Execution <Badge variant="secondary" className="ml-2">{counts.pre}</Badge>
+                <TabsList className="flex flex-nowrap overflow-x-auto w-full h-auto p-1 bg-muted/50 justify-start no-scrollbar">
+                    <TabsTrigger value="pre-execution" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Pre-Execution <Badge variant="secondary" className="ml-1">{counts.pre || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="tender-stage" className="py-2 text-xs md:text-sm">
-                        Tender Stage <Badge variant="secondary" className="ml-2">{counts.tender}</Badge>
+                    <TabsTrigger value="tender-stage" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Tender Stage <Badge variant="secondary" className="ml-1">{counts.tender || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="execution" className="py-2 text-xs md:text-sm">
-                        Execution <Badge variant="secondary" className="ml-2">{counts.exec}</Badge>
+                    <TabsTrigger value="execution" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Execution <Badge variant="secondary" className="ml-1">{counts.exec || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="completed" className="py-2 text-xs md:text-sm">
-                        Completed <Badge variant="secondary" className="ml-2">{counts.comp}</Badge>
+                    <TabsTrigger value="completed" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Completed <Badge variant="secondary" className="ml-1">{counts.comp || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="closed" className="py-2 text-xs md:text-sm">
-                        Closed Files <Badge variant="secondary" className="ml-2">{counts.closed}</Badge>
+                    <TabsTrigger value="closed" className="flex-shrink-0 py-2 px-2 text-xs md:text-sm whitespace-nowrap">
+                        Closed Files <Badge variant="secondary" className="ml-1">{counts.closed || 0}</Badge>
                     </TabsTrigger>
                 </TabsList>
             </Tabs>
